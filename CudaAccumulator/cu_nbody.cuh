@@ -2,6 +2,7 @@
 
 #include <cstdio>
 #include <cstdlib>
+
 #include <cuda_runtime_api.h>
 
 static void handle_error(const cudaError_t err,
