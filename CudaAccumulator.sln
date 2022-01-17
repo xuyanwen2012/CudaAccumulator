@@ -1,0 +1,25 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32112.339
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "CudaAccumulator", "CudaAccumulator\CudaAccumulator.vcxproj", "{BBDE5062-26AA-40A5-B5DE-B6A9DF0A251F}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|x64 = Debug|x64
+		Release|x64 = Release|x64
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{BBDE5062-26AA-40A5-B5DE-B6A9DF0A251F}.Debug|x64.ActiveCfg = Debug|x64
+		{BBDE5062-26AA-40A5-B5DE-B6A9DF0A251F}.Debug|x64.Build.0 = Debug|x64
+		{BBDE5062-26AA-40A5-B5DE-B6A9DF0A251F}.Release|x64.ActiveCfg = Release|x64
+		{BBDE5062-26AA-40A5-B5DE-B6A9DF0A251F}.Release|x64.Build.0 = Release|x64
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {22570A27-9EB1-4093-A515-30E41602EFCF}
+	EndGlobalSection
+EndGlobal
