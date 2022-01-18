@@ -80,9 +80,11 @@
     <CudaCompile Include="cu_nbody.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="accumulator.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="accumulator.h" />
     <ClInclude Include="cu_nbody.cuh" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

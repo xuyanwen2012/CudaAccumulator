@@ -2,7 +2,8 @@
 #include <iostream>
 #include <random>
 
-#include "cu_nbody.cuh"
+#include <vector_types.h>
+#include "accumulator.h"
 
 double my_rand()
 {
@@ -15,23 +16,34 @@ int main(int argc, char* argv[])
 {
 	constexpr int num_bodies = 1024;
 
-	//// Inputs
-	//std::array<double, num_bodies> xs{};
-	//std::array<double, num_bodies> ys{};
-	//std::array<double, num_bodies> masses{};
+	// Inputs
+	std::array<double, num_bodies> xs{};
+	std::array<double, num_bodies> ys{};
+	std::array<double, num_bodies> masses{};
 
-	//for (int i = 0; i < num_bodies; ++i)
-	//{
-	//	xs[i] = my_rand();
-	//	ys[i] = my_rand();
-	//	masses[i] = my_rand() * 1.5;
-	//}
+	for (int i = 0; i < num_bodies; ++i)
+	{
+		xs[i] = my_rand();
+		ys[i] = my_rand();
+		masses[i] = my_rand() * 1.5;
+	}
 
 	// Outputs
-	//std::array<double2, num_bodies> us{};
+	std::array<double2, num_bodies> us{};
 
 	// Compute
-	compute_with_cuda(num_bodies);
+	accumulator_handle* acc = get_accumulator();
+
+	for (int i = 0; i < num_bodies; ++i)
+	{
+		accumulator_set_constants_and_result_address(xs[i], ys[i], &us[i].x, acc);
+
+		for (int j = 0; j < num_bodies; ++j)
+		{
+			accumulator_accumulate(xs[j], xs[j], masses[j], acc);
+		}
+	}
+
 
 	//// Print result
 	//for (int i = 0; i < 10; i+=2)
