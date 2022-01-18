@@ -4,7 +4,7 @@
 
 #include "device_launch_parameters.h"
 
-__global__ void body_force(double3* pos, double2* us, const int n)
+__global__ void body_force(const double3* pos, double2* us, const int n)
 {
 	const int i = blockDim.x * blockIdx.x + threadIdx.x;
 
@@ -16,11 +16,12 @@ __global__ void body_force(double3* pos, double2* us, const int n)
 			const double dy = pos[j].y - pos[i].y;
 
 			const double dist_sqr = dx * dx + dy * dy + 1e-9;
-			const double inv_dist = rsqrtf(dist_sqr);
+			const double inv_dist = rsqrt(dist_sqr);
 			const double inv_dist3 = inv_dist * inv_dist * inv_dist;
+			const double with_mass = inv_dist3 * pos[j].z; // z is the mass in this
 
-			us[i].x += dx * inv_dist3;
-			us[i].y += dy * inv_dist3;
+			us[i].x += dx * with_mass;
+			us[i].y += dy * with_mass;
 		}
 	}
 }
