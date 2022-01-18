@@ -6,12 +6,22 @@
 
 __global__ void body_force(double3* pos, double2* us, const int n)
 {
-	const int tid = blockDim.x * blockIdx.x + threadIdx.x;
+	const int i = blockDim.x * blockIdx.x + threadIdx.x;
 
-	if (tid < n)
+	if (i < n)
 	{
-		us[tid].x = pos[tid].x + pos[tid].y;
-		printf("%f\n", us[tid].x);
+		for (int j = 0; j < n; j++)
+		{
+			const double dx = pos[j].x - pos[i].x;
+			const double dy = pos[j].y - pos[i].y;
+
+			const double dist_sqr = dx * dx + dy * dy + 1e-9;
+			const double inv_dist = rsqrtf(dist_sqr);
+			const double inv_dist3 = inv_dist * inv_dist * inv_dist;
+
+			us[i].x += dx * inv_dist3;
+			us[i].y += dy * inv_dist3;
+		}
 	}
 }
 
@@ -41,7 +51,6 @@ void compute_with_cuda(const int num_bodies)
 
 	auto us = static_cast<double2*>(malloc(in_bytes));
 
-
 	HANDLE_ERROR(cudaMemcpy(dev_pos, pos, in_bytes, cudaMemcpyHostToDevice));
 
 	constexpr int block_size = 256;
@@ -53,6 +62,11 @@ void compute_with_cuda(const int num_bodies)
 
 	cudaFree(dev_pos);
 	cudaFree(dev_us);
+
+	for (int i = 0; i < 10; ++i)
+	{
+		printf("(%f, %f)\n", us[i].x, us[i].y);
+	}
 
 	HANDLE_ERROR(cudaDeviceReset());
 }
