@@ -29,7 +29,7 @@ int accumulator_set_constants_and_result_address(double x, double y, double* add
  */
 int accumulator_accumulate(double x, double y, double mass, accumulator_handle* acc);
 
-int release_accumulator(accumulator_handle* ret);
+int release_accumulator(const accumulator_handle* ret);
 
 #ifdef __cplusplus
 }
