@@ -47,11 +47,11 @@ int main(int argc, char* argv[])
 	release_accumulator(acc);
 
 
-	//// Print result
-	//for (int i = 0; i < 10; i+=2)
-	//{
-	//	std::cout << '(' << us[i] << ", " << us[i + 1]<< ')' << std::endl;
-	//}
+	// Print result
+	for (int i = 0; i < 10; ++i)
+	{
+		std::cout << '(' << us[i].x << ", " << us[i].y << ')' << std::endl;
+	}
 
 	return EXIT_SUCCESS;
 }

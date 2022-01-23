@@ -153,7 +153,12 @@ int accumulator_accumulate(const float x, const float y, const float mass, accum
 		std::array<float2, 1> result{};
 		HANDLE_ERROR(cudaMemcpy(result.data(), acc->dev_result, sizeof(float2), cudaMemcpyDeviceToHost));
 
-		printf("DEBUG:: (%f, %f) => (%f, %f)\n", acc->x, acc->y, result[0].x, result[0].y);
+		//printf("DEBUG:: (%f, %f) => (%f, %f)\n", acc->x, acc->y, result[0].x, result[0].y);
+
+		// Storing the result back 
+		float* tmp = acc->result_addr;
+		tmp[0] = result[0].x;
+		tmp[1] = result[0].y;
 
 		acc->bodies_buf.clear();
 	}
