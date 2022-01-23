@@ -24,5 +24,3 @@ struct universe
 	double3* pos;
 	double2* u;
 };
-
-void compute_with_cuda(int num_bodies);

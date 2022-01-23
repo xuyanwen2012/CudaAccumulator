@@ -78,7 +78,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <CudaCompile Include="accumulator.cu" />
-    <CudaCompile Include="cu_nbody.cu" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />

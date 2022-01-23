@@ -5,10 +5,10 @@
 #include <vector_types.h>
 #include "accumulator.h"
 
-double my_rand()
+float my_rand()
 {
 	static thread_local std::mt19937 generator; // NOLINT(cert-msc51-cpp)
-	const std::uniform_real_distribution<double> distribution(0.0, 1.0);
+	const std::uniform_real_distribution<float> distribution(0.0, 1.0);
 	return distribution(generator);
 }
 
@@ -17,9 +17,9 @@ int main(int argc, char* argv[])
 	constexpr int num_bodies = 1024;
 
 	// Inputs
-	std::array<double, num_bodies> xs{};
-	std::array<double, num_bodies> ys{};
-	std::array<double, num_bodies> masses{};
+	std::array<float, num_bodies> xs{};
+	std::array<float, num_bodies> ys{};
+	std::array<float, num_bodies> masses{};
 
 	for (int i = 0; i < num_bodies; ++i)
 	{
@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
 	}
 
 	// Outputs
-	std::array<double2, num_bodies> us{};
+	std::array<float2, num_bodies> us{};
 
 	// Compute
 	accumulator_handle* acc = get_accumulator();
@@ -43,6 +43,8 @@ int main(int argc, char* argv[])
 			accumulator_accumulate(xs[j], xs[j], masses[j], acc);
 		}
 	}
+
+	release_accumulator(acc);
 
 
 	//// Print result
