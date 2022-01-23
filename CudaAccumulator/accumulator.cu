@@ -126,6 +126,7 @@ int release_accumulator(const accumulator_handle* ret)
 
 int accumulator_accumulate(const float x, const float y, const float mass, accumulator_handle* acc)
 {
+	// TODO: parameterize this, right now just make it 1024 all the time.
 	constexpr int max_num_bodies_per_compute = 1024;
 
 	// Push this to the buffer 
