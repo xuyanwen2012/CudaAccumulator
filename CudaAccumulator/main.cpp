@@ -40,7 +40,7 @@ int main(int argc, char* argv[])
 
 		for (int j = 0; j < num_bodies; ++j)
 		{
-			accumulator_accumulate(xs[j], xs[j], masses[j], acc);
+			accumulator_accumulate(xs[j], ys[j], masses[j], acc);
 		}
 	}
 

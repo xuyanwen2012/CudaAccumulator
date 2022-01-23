@@ -103,11 +103,12 @@ accumulator_handle* get_accumulator()
 }
 
 
-int accumulator_set_constants_and_result_address(float x, float y, float* addr, accumulator_handle* acc)
+int accumulator_set_constants_and_result_address(const float x, const float y, float* addr, accumulator_handle* acc)
 {
 	acc->x = x;
 	acc->y = y;
 	acc->result_addr = addr;
+	acc->bodies_buf.clear();
 
 	return 0;
 }
@@ -123,7 +124,7 @@ int release_accumulator(const accumulator_handle* ret)
 	return 0;
 }
 
-int accumulator_accumulate(float x, float y, float mass, accumulator_handle* acc)
+int accumulator_accumulate(const float x, const float y, const float mass, accumulator_handle* acc)
 {
 	constexpr int max_num_bodies_per_compute = 1024;
 
@@ -140,7 +141,7 @@ int accumulator_accumulate(float x, float y, float mass, accumulator_handle* acc
 		constexpr int block_size = 256;
 		constexpr int grid_size = (max_num_bodies_per_compute + block_size - 1) / block_size;
 
-		const auto source_body = make_float3(x, y, 1.0f);
+		const auto source_body = make_float3(acc->x, acc->y, 1.0f);
 
 		body_compute_forces << <grid_size, block_size >> >(source_body, acc->dev_bodies, acc->dev_forces,
 		                                                   max_num_bodies_per_compute);
@@ -151,7 +152,7 @@ int accumulator_accumulate(float x, float y, float mass, accumulator_handle* acc
 		std::array<float2, 1> result{};
 		HANDLE_ERROR(cudaMemcpy(result.data(), acc->dev_result, sizeof(float2), cudaMemcpyDeviceToHost));
 
-		printf("DEBUG:: (%f, %f) => (%f, %f)\n", x, y, result[0].x, result[0].y);
+		printf("DEBUG:: (%f, %f) => (%f, %f)\n", acc->x, acc->y, result[0].x, result[0].y);
 
 		acc->bodies_buf.clear();
 	}
