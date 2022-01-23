@@ -5,12 +5,23 @@
 #include <vector_types.h>
 #include "accumulator.h"
 
+#ifdef _WIN32
 float my_rand()
 {
 	static thread_local std::mt19937 generator; // NOLINT(cert-msc51-cpp)
 	const std::uniform_real_distribution<float> distribution(0.0, 1.0);
 	return distribution(generator);
 }
+#endif
+
+#ifdef __linux__
+float my_rand(const float f_min = 0.0, const float f_max = 1.0)
+{
+	const float f = static_cast<float>(rand()) / RAND_MAX;
+	return f_min + f * (f_max - f_min);
+}
+#endif
+
 
 int main(int argc, char* argv[])
 {
