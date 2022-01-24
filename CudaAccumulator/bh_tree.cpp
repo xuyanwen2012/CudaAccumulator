@@ -18,13 +18,13 @@ void barnes_hut::tree_node::insert_body(const body_ptr& body_ptr)
 		// then re-insert the current content to the deeper levels
 		split();
 
-		const auto quadrant = static_cast<size_t>(determine_quadrant(content->pos));
+		const auto quadrant = static_cast<size_t>(determine_quadrant(content->pos()));
 		children.at(quadrant)->insert_body(content);
 
 		content.reset();
 	}
 
-	const auto new_quadrant = static_cast<size_t>(determine_quadrant(body_ptr->pos));
+	const auto new_quadrant = static_cast<size_t>(determine_quadrant(body_ptr->pos()));
 	children.at(new_quadrant)->insert_body(body_ptr);
 }
 
@@ -121,7 +121,7 @@ void barnes_hut::quadtree::compute_center_of_mass()
 			              if (node->content != nullptr)
 			              {
 				              mass_sum = node->content->mass;
-				              weighted_pos_sum = node->content->pos * node->content->mass;
+				              weighted_pos_sum = node->content->pos() * node->content->mass;
 			              }
 		              }
 		              else
@@ -201,7 +201,7 @@ bool barnes_hut::quadtree::check_theta(const tree_node* node, const vec2& pos, c
 
 	//const std::complex<float> distance = com - pos;
 	//const auto norm = abs(distance);
-	static constexpr float softening = 1e-9;
+	static constexpr float softening = 1e-9f;
 	const float dx = com.real() - pos.imag();
 	const float dy = com.imag() - pos.imag();
 	const float dist_sqr = dx * dx + dy * dy + softening;

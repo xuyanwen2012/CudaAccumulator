@@ -2,10 +2,9 @@
 #include <iostream>
 #include <random>
 
-#include <vector_types.h>
+#include "vector_types.h"
 #include "accumulator.h"
 #include "body.h"
-
 
 float my_rand(const float f_min = 0.0, const float f_max = 1.0)
 {
@@ -45,22 +44,10 @@ void print_ground_truth(const float* xs, const float* ys, const float* masses, c
 	}
 }
 
-int main(int argc, char* argv[])
+void run_naive_cuda(const std::vector<std::unique_ptr<body<float>>>& bodies,
+                    float2* us,
+                    const int num_bodies)
 {
-	constexpr int num_bodies = 6666;
-
-	// Inputs
-	std::vector<body<float>*> bodies;
-
-	bodies.reserve(num_bodies);
-	for (int i = 0; i < num_bodies; ++i)
-	{
-		bodies.push_back(new body<float>{my_rand(), my_rand(), my_rand() * 1.5f});
-	}
-
-	// Outputs
-	std::array<float2, num_bodies> us{};
-
 	// Compute
 	accumulator_handle* acc = get_accumulator();
 
@@ -75,6 +62,25 @@ int main(int argc, char* argv[])
 	}
 
 	release_accumulator(acc);
+}
+
+int main(int argc, char* argv[])
+{
+	constexpr int num_bodies = 6666;
+
+	// Inputs
+	std::vector<std::unique_ptr<body<float>>> bodies;
+
+	bodies.reserve(num_bodies);
+	for (int i = 0; i < num_bodies; ++i)
+	{
+		bodies.push_back(std::make_unique<body<float>>(my_rand(), my_rand(), my_rand() * 1.5f));
+	}
+
+	// Outputs
+	std::array<float2, num_bodies> us{};
+
+	run_naive_cuda(bodies, us.data(), num_bodies);
 
 	// Print result
 	for (int i = 0; i < 10; ++i)
