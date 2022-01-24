@@ -42,7 +42,7 @@ float2 kernel_func(const float3 p, const float3 q)
 
 __global__ void body_compute_forces(const float3 body, const float3* bodies, float2* forces, const size_t n)
 {
-	const int tid = blockIdx.x * blockDim.x + threadIdx.x;
+	const size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
 
 	if (tid < n)
 	{
@@ -54,17 +54,23 @@ __global__ void body_compute_forces(const float3 body, const float3* bodies, flo
 
 __global__ void force_reduction(const float2* forces, float2* result, const size_t n)
 {
-	constexpr int sm_size = 256;
+	constexpr size_t sm_size = 256;
 	__shared__ float2 partial_sum[sm_size];
 
-	const int tid = blockIdx.x * blockDim.x + threadIdx.x;
+	const size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-
-	partial_sum[threadIdx.x] = forces[tid];
+	if (tid < n)
+	{
+		partial_sum[threadIdx.x] = forces[tid];
+	}
+	else
+	{
+		partial_sum[threadIdx.x] = {0.0f, 0.0f};
+	}
 
 	__syncthreads();
 
-	for (int s = 1; s < blockDim.x; s *= 2)
+	for (size_t s = 1; s < blockDim.x; s *= 2)
 	{
 		if (threadIdx.x % (2 * s) == 0)
 		{
@@ -86,7 +92,7 @@ __global__ void force_reduction(const float2* forces, float2* result, const size
 accumulator_handle* get_accumulator()
 {
 	// TODO: Parametrize this
-	constexpr int max_num_bodies_per_compute = 1024;
+	constexpr size_t max_num_bodies_per_compute = 1024;
 
 	const auto acc = new accumulator_handle{};
 
@@ -126,34 +132,41 @@ int release_accumulator(const accumulator_handle* ret)
 	return 0;
 }
 
+std::array<float2, 1> compute_with_cuda(const accumulator_handle* acc, const size_t max_num_bodies_per_compute)
+{
+	const unsigned bytes_f3 = max_num_bodies_per_compute * sizeof(float3);
+
+	HANDLE_ERROR(cudaMemcpy(acc->dev_bodies, acc->bodies_buf.data(), bytes_f3, cudaMemcpyHostToDevice));
+
+	constexpr size_t block_size = 256;
+	const size_t grid_size = (max_num_bodies_per_compute + block_size - 1) / block_size;
+
+	const auto source_body = make_float3(acc->x, acc->y, 1.0f);
+
+	body_compute_forces << <grid_size, block_size >> >(source_body, acc->dev_bodies, acc->dev_forces,
+	                                                   max_num_bodies_per_compute);
+	force_reduction << <grid_size, block_size >> >(acc->dev_forces, acc->dev_result, max_num_bodies_per_compute);
+	force_reduction << <1, block_size >> >(acc->dev_result, acc->dev_result, max_num_bodies_per_compute);
+
+
+	std::array<float2, 1> result{};
+	HANDLE_ERROR(cudaMemcpy(result.data(), acc->dev_result, sizeof(float2), cudaMemcpyDeviceToHost));
+
+	return result;
+}
+
 int accumulator_accumulate(const float x, const float y, const float mass, accumulator_handle* acc)
 {
 	// TODO: parameterize this, right now just make it 1024 all the time.
-	constexpr int max_num_bodies_per_compute = 1024;
+	constexpr size_t max_num_bodies_per_compute = 1024;
 
 	// Push this to the buffer 
 	acc->bodies_buf.push_back(make_float3(x, y, mass));
 
-	// Once the buffer is filled, ship it to GPU to compute
 	if (acc->bodies_buf.size() >= max_num_bodies_per_compute)
 	{
-		constexpr unsigned bytes_f3 = max_num_bodies_per_compute * sizeof(float3);
-
-		HANDLE_ERROR(cudaMemcpy(acc->dev_bodies, acc->bodies_buf.data(), bytes_f3, cudaMemcpyHostToDevice));
-
-		constexpr int block_size = 256;
-		constexpr int grid_size = (max_num_bodies_per_compute + block_size - 1) / block_size;
-
-		const auto source_body = make_float3(acc->x, acc->y, 1.0f);
-
-		body_compute_forces << <grid_size, block_size >> >(source_body, acc->dev_bodies, acc->dev_forces,
-		                                                   max_num_bodies_per_compute);
-		force_reduction << <grid_size, block_size >> >(acc->dev_forces, acc->dev_result, max_num_bodies_per_compute);
-		force_reduction << <1, block_size >> >(acc->dev_result, acc->dev_result, max_num_bodies_per_compute);
-
-
-		std::array<float2, 1> result{};
-		HANDLE_ERROR(cudaMemcpy(result.data(), acc->dev_result, sizeof(float2), cudaMemcpyDeviceToHost));
+		// Once the buffer is filled, ship it to GPU to compute
+		const auto result = compute_with_cuda(acc, max_num_bodies_per_compute);
 
 		// Storing the result back 
 		float* tmp = acc->result_addr;
