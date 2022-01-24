@@ -2,7 +2,6 @@
 #include <iostream>
 #include <random>
 
-#include "vector_types.h"
 #include "accumulator.h"
 #include "body.h"
 
@@ -45,7 +44,7 @@ void print_ground_truth(const float* xs, const float* ys, const float* masses, c
 }
 
 void run_naive_cuda(const std::vector<std::unique_ptr<body<float>>>& bodies,
-                    float2* us,
+                    std::pair<float, float>* us,
                     const int num_bodies)
 {
 	// Compute
@@ -53,7 +52,7 @@ void run_naive_cuda(const std::vector<std::unique_ptr<body<float>>>& bodies,
 
 	for (int i = 0; i < num_bodies; ++i)
 	{
-		accumulator_set_constants_and_result_address(bodies[i]->x, bodies[i]->y, &us[i].x, acc);
+		accumulator_set_constants_and_result_address(bodies[i]->x, bodies[i]->y, &us[i].first, acc);
 
 		for (int j = 0; j < num_bodies; ++j)
 		{
@@ -78,14 +77,15 @@ int main(int argc, char* argv[])
 	}
 
 	// Outputs
-	std::array<float2, num_bodies> us{};
+	//float2* us = new float2[num];
+	std::array<std::pair<float, float>, num_bodies> us{};
 
 	run_naive_cuda(bodies, us.data(), num_bodies);
 
 	// Print result
 	for (int i = 0; i < 10; ++i)
 	{
-		std::cout << '(' << us[i].x << ", " << us[i].y << ')' << std::endl;
+		std::cout << '(' << us[i].first << ", " << us[i].second << ')' << std::endl;
 	}
 
 	//print_ground_truth(xs.data(), ys.data(), masses.data(), num_bodies);
