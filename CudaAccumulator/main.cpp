@@ -45,7 +45,7 @@ void print_ground_truth(const float* xs, const float* ys, const float* masses, c
 
 int main(int argc, char* argv[])
 {
-	constexpr int num_bodies = 1024 * 2 + 256;
+	constexpr int num_bodies = 6666;
 
 	// Inputs
 	std::array<float, num_bodies> xs{};
@@ -65,7 +65,7 @@ int main(int argc, char* argv[])
 	// Compute
 	accumulator_handle* acc = get_accumulator();
 
-	for (int i = 0; i < num_bodies; ++i)
+	for (int i = 0; i < 10; ++i)
 	{
 		accumulator_set_constants_and_result_address(xs[i], ys[i], &us[i].x, acc);
 

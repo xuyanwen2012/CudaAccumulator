@@ -18,12 +18,14 @@ using accumulator_handle = struct accumulator_handle
 	float y;
 
 	// CUDA Related
+	size_t max_num_bodies_per_compute;
 	std::vector<float3> bodies_buf;
 
 	float3* dev_bodies; // stores the {x, y, mass} for all particles i..n
 	float2* dev_forces; // stores the temporary forces G_ij of particles
 	float2* dev_result; // stores the result of reduced force at [0]
 };
+
 
 /**
  * \brief find the previous power of 2 of this number
@@ -54,6 +56,7 @@ __device__ float2 kernel_func_gpu(const float3 p, const float3 q)
 
 	return make_float2(dx * with_mass, dy * with_mass);
 }
+
 
 float2 kernel_func_cpu(const float dx, const float dy, const float mass)
 {
@@ -114,6 +117,7 @@ __global__ void force_reduction(const float2* forces, float2* result, const size
 	}
 }
 
+
 std::array<float2, 1> compute_with_cuda(const accumulator_handle* acc, const unsigned n)
 {
 	const unsigned bytes_f3 = n * sizeof(float3);
@@ -172,6 +176,7 @@ accumulator_handle* get_accumulator()
 	HANDLE_ERROR(cudaMalloc(reinterpret_cast<void**>(&acc->dev_result), bytes_f2));
 
 	acc->bodies_buf = {};
+	acc->max_num_bodies_per_compute = max_num_bodies_per_compute;
 
 	return acc;
 }
@@ -183,15 +188,14 @@ int check_and_clear_current_buffer(accumulator_handle* acc)
 	{
 		// Finished the remaining bodies in the buffer before switching context
 		uint32_t remaining_n = acc->bodies_buf.size();
-		const uint32_t previous_pow_of_2 = flp2(remaining_n);
 
 		float2 rem_force = {};
-		float2 rem_force2 = {};
 
-		if (previous_pow_of_2 >= 256)
+		while (remaining_n > 256)
 		{
+			const uint32_t previous_pow_of_2 = flp2(remaining_n);
 			// TODO: currently using ugly solution, need to ask Tyler
-			cudaMemset(acc->dev_result, 0, 1024 * sizeof(float2));
+			cudaMemset(acc->dev_result, 0, acc->max_num_bodies_per_compute * sizeof(float2));
 
 			const auto result = compute_with_cuda(acc, previous_pow_of_2);
 			rem_force.x += result[0].x;
@@ -200,12 +204,15 @@ int check_and_clear_current_buffer(accumulator_handle* acc)
 			remaining_n -= previous_pow_of_2;
 
 			// drop the first 'previous_pow_of_2' particles
+			std::vector<decltype(acc->bodies_buf)::value_type>(acc->bodies_buf.begin() + previous_pow_of_2,
+			                                                   acc->bodies_buf.end()).swap(acc->bodies_buf);
 
-
-			//acc->bodies_buf
+			// DEBUG LOG
+			//printf("-- previous_pow_of_2 %d, remaining_n: %d\n", previous_pow_of_2, remaining_n);
 		}
 
-		// Do the rest on CPU
+
+		// Do the rest on CPU ( < 256)
 		for (unsigned j = 0; j < remaining_n; ++j)
 		{
 			const auto dx = acc->x - acc->bodies_buf[j].x;
@@ -254,16 +261,13 @@ int release_accumulator(accumulator_handle* ret)
 
 int accumulator_accumulate(const float x, const float y, const float mass, accumulator_handle* acc)
 {
-	// TODO: parameterize this, right now just make it 1024 all the time.
-	constexpr unsigned max_num_bodies_per_compute = 1024;
-
 	// Push this to the buffer 
 	acc->bodies_buf.push_back(make_float3(x, y, mass));
 
-	if (acc->bodies_buf.size() >= max_num_bodies_per_compute)
+	if (acc->bodies_buf.size() >= acc->max_num_bodies_per_compute)
 	{
 		// Once the buffer is filled, ship it to GPU to compute
-		const auto result = compute_with_cuda(acc, max_num_bodies_per_compute);
+		const auto result = compute_with_cuda(acc, acc->max_num_bodies_per_compute);
 
 		// Storing the result back 
 		float* tmp = acc->result_addr;
