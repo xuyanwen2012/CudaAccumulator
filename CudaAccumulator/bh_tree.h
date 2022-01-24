@@ -23,8 +23,8 @@ namespace barnes_hut
 		std::complex<T> size;
 	};
 
-	using vec2 = std::complex<double>;
-	using body_ptr = std::shared_ptr<body<double>>;
+	using vec2 = std::complex<float>;
+	using body_ptr = std::shared_ptr<body<float>>;
 
 	struct tree_node
 	{
@@ -34,7 +34,7 @@ namespace barnes_hut
 
 		tree_node() = delete;
 
-		tree_node(const int uid, const rect<double> bound, const size_t level)
+		tree_node(const int uid, const rect<float> bound, const size_t level)
 			: uid(uid), level(level), bounding_box(bound), node_mass(0), is_leaf_(true)
 		{
 		}
@@ -46,7 +46,7 @@ namespace barnes_hut
 		/// I used center point as the position.
 		///	Also the entire boarder of the whole universe is between [0..1]
 		/// </summary>
-		rect<double> bounding_box;
+		rect<float> bounding_box;
 
 		/// <summary>
 		///
@@ -63,13 +63,13 @@ namespace barnes_hut
 		/// <summary>
 		/// This field stores the total mass of this node and its descendants
 		/// </summary>
-		double node_mass;
+		float node_mass;
 
 		/// <summary>
 		///	The total sum of this node's and its descendants 'Position * mass'
 		/// This is used to compute the center of mass, use it divide by 'node_mass'
 		/// </summary>
-		std::complex<double> weighted_pos;
+		std::complex<float> weighted_pos;
 
 		/// <summary>
 		///
@@ -79,7 +79,7 @@ namespace barnes_hut
 		/// <summary>
 		///
 		/// </summary>
-		std::complex<double> center_of_mass() const { return weighted_pos / node_mass; }
+		std::complex<float> center_of_mass() const { return weighted_pos / node_mass; }
 
 	private:
 		bool is_leaf_;
@@ -117,10 +117,10 @@ namespace barnes_hut
 		/// <param name="pos"></param>
 		/// <param name="theta"></param>
 		/// <returns></returns>
-		std::complex<double> compute_force_at_iterative_dfs_array(
+		std::complex<float> compute_force_at_iterative_dfs_array(
 			std::array<tree_node*, 1024>& stack,
 			const vec2& pos,
-			double theta
+			float theta
 		);
 
 		// some statistical things
@@ -131,8 +131,8 @@ namespace barnes_hut
 	private:
 		tree_node root_;
 
-		static inline bool check_theta(const tree_node* node, const vec2& pos, double theta);
-		static inline std::complex<double> direct_compute(const body_ptr& body, const vec2& pos);
-		static inline std::complex<double> estimate_compute(const tree_node* node, const vec2& pos);
+		static inline bool check_theta(const tree_node* node, const vec2& pos, float theta);
+		static inline std::complex<float> direct_compute(const body_ptr& body, const vec2& pos);
+		static inline std::complex<float> estimate_compute(const tree_node* node, const vec2& pos);
 	};
 }

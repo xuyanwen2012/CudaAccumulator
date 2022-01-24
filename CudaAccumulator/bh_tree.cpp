@@ -54,8 +54,8 @@ void barnes_hut::tree_node::split()
 {
 	is_leaf_ = false;
 
-	const auto hw = bounding_box.size.real() / 2.0;
-	const auto hh = bounding_box.size.imag() / 2.0;
+	const auto hw = bounding_box.size.real() / 2.0f;
+	const auto hh = bounding_box.size.imag() / 2.0f;
 	const auto cx = bounding_box.center.real();
 	const auto cy = bounding_box.center.imag();
 
@@ -65,10 +65,10 @@ void barnes_hut::tree_node::split()
 
 	const auto my_uid = uid * 10;
 
-	const auto sw = new tree_node{my_uid + 0, rect<double>{cx - hw / 2.0, cy - hh / 2.0, hw, hh}, next_level};
-	const auto se = new tree_node{my_uid + 1, rect<double>{cx + hw / 2.0, cy - hh / 2.0, hw, hh}, next_level};
-	const auto nw = new tree_node{my_uid + 2, rect<double>{cx - hw / 2.0, cy + hh / 2.0, hw, hh}, next_level};
-	const auto ne = new tree_node{my_uid + 3, rect<double>{cx + hw / 2.0, cy + hh / 2.0, hw, hh}, next_level};
+	const auto sw = new tree_node{my_uid + 0, rect<float>{cx - hw / 2.0f, cy - hh / 2.0f, hw, hh}, next_level};
+	const auto se = new tree_node{my_uid + 1, rect<float>{cx + hw / 2.0f, cy - hh / 2.0f, hw, hh}, next_level};
+	const auto nw = new tree_node{my_uid + 2, rect<float>{cx - hw / 2.0f, cy + hh / 2.0f, hw, hh}, next_level};
+	const auto ne = new tree_node{my_uid + 3, rect<float>{cx + hw / 2.0f, cy + hh / 2.0f, hw, hh}, next_level};
 
 	children[0] = sw;
 	children[1] = se;
@@ -78,7 +78,7 @@ void barnes_hut::tree_node::split()
 
 barnes_hut::quadtree::quadtree() :
 	num_particles(0),
-	root_(tree_node{1, rect<double>{0.5, 0.5, 1.0, 1.0}, 0})
+	root_(tree_node{1, rect<float>{0.5f, 0.5f, 1.0f, 1.0f}, 0})
 {
 }
 
@@ -114,8 +114,8 @@ void barnes_hut::quadtree::compute_center_of_mass()
 	              [&](tree_node* node)
 	              {
 		              // sum the masses
-		              double mass_sum = 0.0;
-		              std::complex<double> weighted_pos_sum{0, 0};
+		              float mass_sum = 0.0f;
+		              std::complex<float> weighted_pos_sum{0, 0};
 		              if (node->is_leaf_)
 		              {
 			              if (node->content != nullptr)
@@ -138,10 +138,10 @@ void barnes_hut::quadtree::compute_center_of_mass()
 	              });
 }
 
-std::complex<double> barnes_hut::quadtree::compute_force_at_iterative_dfs_array(
-	std::array<tree_node*, 1024>& stack, const vec2& pos, const double theta)
+std::complex<float> barnes_hut::quadtree::compute_force_at_iterative_dfs_array(
+	std::array<tree_node*, 1024>& stack, const vec2& pos, const float theta)
 {
-	std::complex<double> force;
+	std::complex<float> force;
 
 	size_t stack_cp = 0; // aka (stack current pointer)
 
@@ -190,38 +190,29 @@ std::complex<double> barnes_hut::quadtree::compute_force_at_iterative_dfs_array(
 	return force;
 }
 
-std::complex<double> barnes_hut::quadtree::direct_compute(const body_ptr& body, const vec2& pos)
+std::complex<float> barnes_hut::quadtree::direct_compute(const body_ptr& body, const vec2& pos)
 {
-	std::complex<double> force;
-
-	if (body->pos != pos)
-	{
-		const auto f = kernel_func(body->pos, pos);
-		force += f * body->mass;
-		//force += 1.0;
-	}
-
-	return force;
+	return {};
 }
 
-bool barnes_hut::quadtree::check_theta(const tree_node* node, const vec2& pos, const double theta)
+bool barnes_hut::quadtree::check_theta(const tree_node* node, const vec2& pos, const float theta)
 {
-	const std::complex<double> com = node->center_of_mass();
+	const std::complex<float> com = node->center_of_mass();
 
-	//const std::complex<double> distance = com - pos;
+	//const std::complex<float> distance = com - pos;
 	//const auto norm = abs(distance);
-	static constexpr double softening = 1e-9;
-	const double dx = com.real() - pos.imag();
-	const double dy = com.imag() - pos.imag();
-	const double dist_sqr = dx * dx + dy * dy + softening;
-	const double inv_norm = 1.0f / sqrtf(dist_sqr);
+	static constexpr float softening = 1e-9;
+	const float dx = com.real() - pos.imag();
+	const float dy = com.imag() - pos.imag();
+	const float dist_sqr = dx * dx + dy * dy + softening;
+	const float inv_norm = 1.0f / sqrtf(dist_sqr);
 
 	const auto geo_size = node->bounding_box.size.real();
 
 	return geo_size * inv_norm < theta;
 }
 
-std::complex<double> barnes_hut::quadtree::estimate_compute(const tree_node* node, const vec2& pos)
+std::complex<float> barnes_hut::quadtree::estimate_compute(const tree_node* node, const vec2& pos)
 {
 	return {};
 }
