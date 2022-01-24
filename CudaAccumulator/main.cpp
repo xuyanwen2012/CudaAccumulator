@@ -57,7 +57,6 @@ int main(int argc, char* argv[])
 
 	release_accumulator(acc);
 
-
 	// Print result
 	for (int i = 0; i < 10; ++i)
 	{

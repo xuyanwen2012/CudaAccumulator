@@ -26,7 +26,7 @@ using accumulator_handle = struct accumulator_handle
 };
 
 
-__device__ float2 kernel_func(const float3 p, const float3 q)
+float2 kernel_func(const float3 p, const float3 q)
 {
 	const float dx = p.x - q.x;
 	const float dy = p.y - q.y;
@@ -44,8 +44,11 @@ __global__ void body_compute_forces(const float3 body, const float3* bodies, flo
 {
 	const int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-	const auto force = kernel_func(body, bodies[tid]);
-	forces[tid] = force;
+	if (tid < n)
+	{
+		const auto force = kernel_func(body, bodies[tid]);
+		forces[tid] = force;
+	}
 }
 
 
@@ -96,7 +99,6 @@ accumulator_handle* get_accumulator()
 	HANDLE_ERROR(cudaMalloc(reinterpret_cast<void**>(&acc->dev_forces), bytes_f2));
 	HANDLE_ERROR(cudaMalloc(reinterpret_cast<void**>(&acc->dev_result), bytes_f2));
 
-	//acc->result = static_cast<float2*>(malloc(1));
 	acc->bodies_buf = {};
 
 	return acc;
@@ -152,8 +154,6 @@ int accumulator_accumulate(const float x, const float y, const float mass, accum
 
 		std::array<float2, 1> result{};
 		HANDLE_ERROR(cudaMemcpy(result.data(), acc->dev_result, sizeof(float2), cudaMemcpyDeviceToHost));
-
-		//printf("DEBUG:: (%f, %f) => (%f, %f)\n", acc->x, acc->y, result[0].x, result[0].y);
 
 		// Storing the result back 
 		float* tmp = acc->result_addr;
