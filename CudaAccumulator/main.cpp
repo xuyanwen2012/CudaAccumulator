@@ -5,6 +5,14 @@
 #include <vector_types.h>
 #include "accumulator.h"
 
+template <typename T>
+struct body
+{
+	T x;
+	T y;
+	T mass;
+};
+
 float my_rand(const float f_min = 0.0, const float f_max = 1.0)
 {
 	const float f = static_cast<float>(rand()) / RAND_MAX;
@@ -48,15 +56,12 @@ int main(int argc, char* argv[])
 	constexpr int num_bodies = 6666;
 
 	// Inputs
-	std::array<float, num_bodies> xs{};
-	std::array<float, num_bodies> ys{};
-	std::array<float, num_bodies> masses{};
+	std::vector<body<float>*> bodies;
 
+	bodies.reserve(num_bodies);
 	for (int i = 0; i < num_bodies; ++i)
 	{
-		xs[i] = my_rand();
-		ys[i] = my_rand();
-		masses[i] = my_rand() * 1.5;
+		bodies.push_back(new body<float>{my_rand(), my_rand(), my_rand() * 1.5f});
 	}
 
 	// Outputs
@@ -65,13 +70,13 @@ int main(int argc, char* argv[])
 	// Compute
 	accumulator_handle* acc = get_accumulator();
 
-	for (int i = 0; i < 10; ++i)
+	for (int i = 0; i < num_bodies; ++i)
 	{
-		accumulator_set_constants_and_result_address(xs[i], ys[i], &us[i].x, acc);
+		accumulator_set_constants_and_result_address(bodies[i]->x, bodies[i]->y, &us[i].x, acc);
 
 		for (int j = 0; j < num_bodies; ++j)
 		{
-			accumulator_accumulate(xs[j], ys[j], masses[j], acc);
+			accumulator_accumulate(bodies[j]->x, bodies[j]->y, bodies[j]->mass, acc);
 		}
 	}
 
@@ -83,7 +88,7 @@ int main(int argc, char* argv[])
 		std::cout << '(' << us[i].x << ", " << us[i].y << ')' << std::endl;
 	}
 
-	print_ground_truth(xs.data(), ys.data(), masses.data(), num_bodies);
+	//print_ground_truth(xs.data(), ys.data(), masses.data(), num_bodies);
 
 	return EXIT_SUCCESS;
 }
