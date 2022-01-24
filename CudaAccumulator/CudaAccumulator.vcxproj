@@ -80,6 +80,7 @@
     <CudaCompile Include="accumulator.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="bh_tree.cpp" />
     <ClCompile Include="main.cpp" />
     <Text Include="Makefile">
       <FileType>Document</FileType>
@@ -87,6 +88,8 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="accumulator.h" />
+    <ClInclude Include="bh_tree.h" />
+    <ClInclude Include="body.h" />
     <ClInclude Include="cu_nbody.cuh" />
   </ItemGroup>
   <ItemGroup>

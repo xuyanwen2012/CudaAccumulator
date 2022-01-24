@@ -4,14 +4,8 @@
 
 #include <vector_types.h>
 #include "accumulator.h"
+#include "body.h"
 
-template <typename T>
-struct body
-{
-	T x;
-	T y;
-	T mass;
-};
 
 float my_rand(const float f_min = 0.0, const float f_max = 1.0)
 {
