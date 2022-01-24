@@ -131,18 +131,17 @@ std::array<float2, 1> compute_with_cuda(const accumulator_handle* acc, const uns
 	                                                   acc->dev_forces,
 	                                                   n);
 
+	//printf("----Debug-----\n");
+	//constexpr unsigned n_to_ins = 10;
+	//std::array<float2, n_to_ins> inspect_segment{};
+	//HANDLE_ERROR(cudaMemcpy(inspect_segment.data(), acc->dev_forces, n_to_ins * sizeof(float2), cudaMemcpyDeviceToHost));
 
-	printf("----Debug-----\n");
-	constexpr unsigned n_to_ins = 10;
-	std::array<float2, n_to_ins> inspect_segment{};
-	HANDLE_ERROR(cudaMemcpy(inspect_segment.data(), acc->dev_forces, n_to_ins * sizeof(float2), cudaMemcpyDeviceToHost));
+	//for (unsigned i = 0; i < n_to_ins; ++i)
+	//{
+	//	printf("%f,%f\n", inspect_segment[i].x, inspect_segment[i].y);
+	//}
 
-	for (unsigned i = 0; i < n_to_ins; ++i)
-	{
-		printf("%f,%f\n", inspect_segment[i].x, inspect_segment[i].y);
-	}
-
-	printf("----Debug-----\n");
+	//printf("----Debug-----\n");
 
 
 	force_reduction << <grid_size, block_size >> >(acc->dev_forces, acc->dev_result, n);
@@ -189,42 +188,34 @@ int check_and_clear_current_buffer(accumulator_handle* acc)
 		float2 rem_force = {};
 		float2 rem_force2 = {};
 
-		//if (previous_pow_of_2 >= 256)
-		//{
-		//	const auto result = compute_with_cuda(acc, previous_pow_of_2);
-		//	rem_force.x += result[0].x;
-		//	rem_force.y += result[0].y;
+		if (previous_pow_of_2 >= 256)
+		{
+			// TODO: currently using ugly solution, need to ask Tyler
+			cudaMemset(acc->dev_result, 0, 1024 * sizeof(float2));
 
-		//	remaining_n -= previous_pow_of_2;
+			const auto result = compute_with_cuda(acc, previous_pow_of_2);
+			rem_force.x += result[0].x;
+			rem_force.y += result[0].y;
 
-		//	// drop the first 'previous_pow_of_2' particles
+			remaining_n -= previous_pow_of_2;
 
-		//	for (unsigned j = 0; j < previous_pow_of_2; ++j)
-		//	{
-		//		const auto dx = acc->x - acc->bodies_buf[j].x;
-		//		const auto dy = acc->y - acc->bodies_buf[j].y;
-		//		const auto mass = acc->bodies_buf[j].z;
-
-		//		const auto result2 = kernel_func_cpu(dx, dy, mass);
-		//		rem_force2.x += result2.x;
-		//		rem_force2.y += result2.y;
-		//	}
+			// drop the first 'previous_pow_of_2' particles
 
 
-		//	//acc->bodies_buf
-		//}
+			//acc->bodies_buf
+		}
 
 		// Do the rest on CPU
-		//for (unsigned j = 0; j < remaining_n; ++j)
-		//{
-		//	const auto dx = acc->x - acc->bodies_buf[j].x;
-		//	const auto dy = acc->y - acc->bodies_buf[j].y;
-		//	const auto mass = acc->bodies_buf[j].z;
+		for (unsigned j = 0; j < remaining_n; ++j)
+		{
+			const auto dx = acc->x - acc->bodies_buf[j].x;
+			const auto dy = acc->y - acc->bodies_buf[j].y;
+			const auto mass = acc->bodies_buf[j].z;
 
-		//	const auto result = kernel_func_cpu(dx, dy, mass);
-		//	rem_force.x += result.x;
-		//	rem_force.y += result.y;
-		//}
+			const auto result = kernel_func_cpu(dx, dy, mass);
+			rem_force.x += result.x;
+			rem_force.y += result.y;
+		}
 
 		float* tmp = acc->result_addr;
 		tmp[0] += rem_force.x;
