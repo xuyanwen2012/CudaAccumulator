@@ -57,7 +57,7 @@ void print_ground_truth(const float* xs, const float* ys, const float* masses, c
 
 int main(int argc, char* argv[])
 {
-	constexpr int num_bodies = 1024;
+	constexpr int num_bodies = 1024 * 2;
 
 	// Inputs
 	std::array<float, num_bodies> xs{};

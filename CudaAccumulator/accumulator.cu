@@ -170,8 +170,8 @@ int accumulator_accumulate(const float x, const float y, const float mass, accum
 
 		// Storing the result back 
 		float* tmp = acc->result_addr;
-		tmp[0] = result[0].x;
-		tmp[1] = result[0].y;
+		tmp[0] += result[0].x;
+		tmp[1] += result[0].y;
 
 		acc->bodies_buf.clear();
 	}
