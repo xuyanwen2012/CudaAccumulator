@@ -25,8 +25,24 @@ using accumulator_handle = struct accumulator_handle
 	float2* dev_result; // stores the result of reduced force at [0]
 };
 
+/**
+ * \brief find the previous power of 2 of this number
+ * https://stackoverflow.com/questions/2679815/previous-power-of-2
+ * \param x the number to round down
+ * \return the previous power of 2
+ */
+uint32_t flp2(uint32_t x)
+{
+	x = x | x >> 1;
+	x = x | x >> 2;
+	x = x | x >> 4;
+	x = x | x >> 8;
+	x = x | x >> 16;
+	return x - (x >> 1);
+}
 
-__device__ float2 kernel_func(const float3 p, const float3 q)
+
+__device__ float2 kernel_func_gpu(const float3 p, const float3 q)
 {
 	const float dx = p.x - q.x;
 	const float dy = p.y - q.y;
@@ -39,6 +55,16 @@ __device__ float2 kernel_func(const float3 p, const float3 q)
 	return make_float2(dx * with_mass, dy * with_mass);
 }
 
+float2 kernel_func_cpu(const float dx, const float dy, const float mass)
+{
+	const float dist_sqr = dx * dx + dy * dy + 1e-9f;
+	const float inv_dist = 1.0f / sqrtf(dist_sqr);
+	const float inv_dist3 = inv_dist * inv_dist * inv_dist;
+	const float with_mass = inv_dist3 * mass; // z is the mass in this case
+
+	return make_float2(dx * with_mass, dy * with_mass);
+}
+
 
 __global__ void body_compute_forces(const float3 body, const float3* bodies, float2* forces, const size_t n)
 {
@@ -46,7 +72,7 @@ __global__ void body_compute_forces(const float3 body, const float3* bodies, flo
 
 	if (tid < n)
 	{
-		const auto force = kernel_func(body, bodies[tid]);
+		const auto force = kernel_func_gpu(body, bodies[tid]);
 		forces[tid] = force;
 	}
 }
@@ -88,6 +114,47 @@ __global__ void force_reduction(const float2* forces, float2* result, const size
 	}
 }
 
+std::array<float2, 1> compute_with_cuda(const accumulator_handle* acc, const unsigned n)
+{
+	const unsigned bytes_f3 = n * sizeof(float3);
+
+	HANDLE_ERROR(cudaMemcpy(acc->dev_bodies, acc->bodies_buf.data(), bytes_f3, cudaMemcpyHostToDevice));
+
+	// So I think the block size is what the max thread of a block
+	constexpr unsigned block_size = 256;
+	const unsigned grid_size = (n + block_size - 1) / block_size;
+
+	const auto source_body = make_float3(acc->x, acc->y, 1.0f);
+
+	body_compute_forces << <grid_size, block_size >> >(source_body,
+	                                                   acc->dev_bodies,
+	                                                   acc->dev_forces,
+	                                                   n);
+
+
+	printf("----Debug-----\n");
+	constexpr unsigned n_to_ins = 10;
+	std::array<float2, n_to_ins> inspect_segment{};
+	HANDLE_ERROR(cudaMemcpy(inspect_segment.data(), acc->dev_forces, n_to_ins * sizeof(float2), cudaMemcpyDeviceToHost));
+
+	for (unsigned i = 0; i < n_to_ins; ++i)
+	{
+		printf("%f,%f\n", inspect_segment[i].x, inspect_segment[i].y);
+	}
+
+	printf("----Debug-----\n");
+
+
+	force_reduction << <grid_size, block_size >> >(acc->dev_forces, acc->dev_result, n);
+	force_reduction << <1, block_size >> >(acc->dev_result, acc->dev_result, n);
+
+
+	std::array<float2, 1> result{};
+	HANDLE_ERROR(cudaMemcpy(result.data(), acc->dev_result, sizeof(float2), cudaMemcpyDeviceToHost));
+
+	return result;
+}
+
 
 accumulator_handle* get_accumulator()
 {
@@ -111,8 +178,67 @@ accumulator_handle* get_accumulator()
 }
 
 
+int check_and_clear_current_buffer(accumulator_handle* acc)
+{
+	if (!acc->bodies_buf.empty())
+	{
+		// Finished the remaining bodies in the buffer before switching context
+		uint32_t remaining_n = acc->bodies_buf.size();
+		const uint32_t previous_pow_of_2 = flp2(remaining_n);
+
+		float2 rem_force = {};
+		float2 rem_force2 = {};
+
+		//if (previous_pow_of_2 >= 256)
+		//{
+		//	const auto result = compute_with_cuda(acc, previous_pow_of_2);
+		//	rem_force.x += result[0].x;
+		//	rem_force.y += result[0].y;
+
+		//	remaining_n -= previous_pow_of_2;
+
+		//	// drop the first 'previous_pow_of_2' particles
+
+		//	for (unsigned j = 0; j < previous_pow_of_2; ++j)
+		//	{
+		//		const auto dx = acc->x - acc->bodies_buf[j].x;
+		//		const auto dy = acc->y - acc->bodies_buf[j].y;
+		//		const auto mass = acc->bodies_buf[j].z;
+
+		//		const auto result2 = kernel_func_cpu(dx, dy, mass);
+		//		rem_force2.x += result2.x;
+		//		rem_force2.y += result2.y;
+		//	}
+
+
+		//	//acc->bodies_buf
+		//}
+
+		// Do the rest on CPU
+		//for (unsigned j = 0; j < remaining_n; ++j)
+		//{
+		//	const auto dx = acc->x - acc->bodies_buf[j].x;
+		//	const auto dy = acc->y - acc->bodies_buf[j].y;
+		//	const auto mass = acc->bodies_buf[j].z;
+
+		//	const auto result = kernel_func_cpu(dx, dy, mass);
+		//	rem_force.x += result.x;
+		//	rem_force.y += result.y;
+		//}
+
+		float* tmp = acc->result_addr;
+		tmp[0] += rem_force.x;
+		tmp[1] += rem_force.y;
+	}
+
+	return 0;
+}
+
+
 int accumulator_set_constants_and_result_address(const float x, const float y, float* addr, accumulator_handle* acc)
 {
+	check_and_clear_current_buffer(acc);
+
 	acc->x = x;
 	acc->y = y;
 	acc->result_addr = addr;
@@ -122,8 +248,10 @@ int accumulator_set_constants_and_result_address(const float x, const float y, f
 }
 
 
-int release_accumulator(const accumulator_handle* ret)
+int release_accumulator(accumulator_handle* ret)
 {
+	check_and_clear_current_buffer(ret);
+
 	cudaFree(ret->dev_bodies);
 	cudaFree(ret->dev_forces);
 	cudaFree(ret->dev_result);
@@ -132,28 +260,6 @@ int release_accumulator(const accumulator_handle* ret)
 	return 0;
 }
 
-std::array<float2, 1> compute_with_cuda(const accumulator_handle* acc, const unsigned max_num_bodies_per_compute)
-{
-	const unsigned bytes_f3 = max_num_bodies_per_compute * sizeof(float3);
-
-	HANDLE_ERROR(cudaMemcpy(acc->dev_bodies, acc->bodies_buf.data(), bytes_f3, cudaMemcpyHostToDevice));
-
-	constexpr unsigned block_size = 256;
-	const unsigned grid_size = (max_num_bodies_per_compute + block_size - 1) / block_size;
-
-	const auto source_body = make_float3(acc->x, acc->y, 1.0f);
-
-	body_compute_forces << <grid_size, block_size >> >(source_body, acc->dev_bodies, acc->dev_forces,
-	                                                   max_num_bodies_per_compute);
-	force_reduction << <grid_size, block_size >> >(acc->dev_forces, acc->dev_result, max_num_bodies_per_compute);
-	force_reduction << <1, block_size >> >(acc->dev_result, acc->dev_result, max_num_bodies_per_compute);
-
-
-	std::array<float2, 1> result{};
-	HANDLE_ERROR(cudaMemcpy(result.data(), acc->dev_result, sizeof(float2), cudaMemcpyDeviceToHost));
-
-	return result;
-}
 
 int accumulator_accumulate(const float x, const float y, const float mass, accumulator_handle* acc)
 {

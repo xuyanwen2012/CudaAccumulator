@@ -5,23 +5,11 @@
 #include <vector_types.h>
 #include "accumulator.h"
 
-#ifdef _WIN32
-float my_rand()
-{
-	static thread_local std::mt19937 generator; // NOLINT(cert-msc51-cpp)
-	const std::uniform_real_distribution<float> distribution(0.0, 1.0);
-	return distribution(generator);
-}
-#endif
-
-#ifdef __linux__
 float my_rand(const float f_min = 0.0, const float f_max = 1.0)
 {
 	const float f = static_cast<float>(rand()) / RAND_MAX;
 	return f_min + f * (f_max - f_min);
 }
-#endif
-
 
 void print_ground_truth(const float* xs, const float* ys, const float* masses, const unsigned n)
 {
@@ -77,7 +65,7 @@ int main(int argc, char* argv[])
 	// Compute
 	accumulator_handle* acc = get_accumulator();
 
-	for (int i = 0; i < num_bodies; ++i)
+	for (int i = 0; i < 1; ++i)
 	{
 		accumulator_set_constants_and_result_address(xs[i], ys[i], &us[i].x, acc);
 
@@ -90,7 +78,7 @@ int main(int argc, char* argv[])
 	release_accumulator(acc);
 
 	// Print result
-	for (int i = 0; i < 10; ++i)
+	for (int i = 0; i < 1; ++i)
 	{
 		std::cout << '(' << us[i].x << ", " << us[i].y << ')' << std::endl;
 	}
