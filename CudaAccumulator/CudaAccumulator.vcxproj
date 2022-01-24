@@ -81,7 +81,9 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
-    <ClCompile Include="Makefile" />
+    <Text Include="Makefile">
+      <FileType>Document</FileType>
+    </Text>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="accumulator.h" />
