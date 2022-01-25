@@ -146,7 +146,7 @@ void barnes_hut::quadtree::compute_center_of_mass()
 	              });
 }
 
-void inner_dfs_accumulate(barnes_hut::tree_node* current, accumulator_handle* acc, float theta)
+void inner_dfs_accumulate(barnes_hut::tree_node* current, accumulator_handle* acc, const float theta)
 {
 	using namespace barnes_hut;
 
@@ -159,7 +159,6 @@ void inner_dfs_accumulate(barnes_hut::tree_node* current, accumulator_handle* ac
 			return;
 		}
 
-		//quadtree::direct_compute(current->content, pos);
 		accumulator_accumulate(current->content->x,
 		                       current->content->y,
 		                       current->content->mass,
@@ -167,7 +166,6 @@ void inner_dfs_accumulate(barnes_hut::tree_node* current, accumulator_handle* ac
 	}
 	else if (quadtree::check_theta(current, pos, theta))
 	{
-		//quadtree::estimate_compute(current, pos);
 		const auto cm = current->center_of_mass();
 		accumulator_accumulate(cm.real(),
 		                       cm.imag(),
@@ -178,19 +176,21 @@ void inner_dfs_accumulate(barnes_hut::tree_node* current, accumulator_handle* ac
 	{
 		for (tree_node* child : current->children)
 		{
+			// printf("%d\n", child->uid);
 			inner_dfs_accumulate(child, acc, theta);
 		}
 	}
 }
 
-std::complex<float> barnes_hut::quadtree::compute_force_accumulator(accumulator_handle* acc, const vec2& pos,
-                                                                    float theta)
+std::complex<float> barnes_hut::quadtree::compute_force_accumulator(accumulator_handle* acc,
+                                                                    const vec2& pos,
+                                                                    const float theta)
 {
 	float2 us{};
 
 	accumulator_set_constants_and_result_address(pos.real(), pos.imag(), &us.x, acc);
 
-	inner_dfs_accumulate(&root_, acc, 1.0);
+	inner_dfs_accumulate(&root_, acc, theta);
 
 	return {us.x, us.y};
 }
@@ -199,19 +199,11 @@ bool barnes_hut::quadtree::check_theta(const tree_node* node, const vec2& pos, c
 {
 	const std::complex<float> com = node->center_of_mass();
 
-	//const std::complex<float> distance = com - pos;
-	//const auto norm = abs(distance);
-
-	static constexpr float softening = 1e-9f;
-	const float dx = com.real() - pos.imag();
-	const float dy = com.imag() - pos.imag();
-	const float dist_sqr = dx * dx + dy * dy + softening;
-	const float inv_norm = 1.0f / sqrtf(dist_sqr);
+	const std::complex<float> distance = com - pos;
+	const auto norm = abs(distance);
 
 	const auto geo_size = node->bounding_box.size.real();
-
-	//return geo_size / norm < theta;
-	return geo_size * inv_norm < theta;
+	return geo_size / norm < theta;
 }
 
 
