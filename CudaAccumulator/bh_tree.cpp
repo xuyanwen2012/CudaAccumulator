@@ -146,7 +146,7 @@ void barnes_hut::quadtree::compute_center_of_mass()
 	              });
 }
 
-void inner_dfs_accumulate(barnes_hut::tree_node* current, accumulator_handle* acc, const float theta)
+void inner_dfs_accumulate(const barnes_hut::tree_node* current, accumulator_handle* acc, const float theta)
 {
 	using namespace barnes_hut;
 
@@ -174,7 +174,7 @@ void inner_dfs_accumulate(barnes_hut::tree_node* current, accumulator_handle* ac
 	}
 	else
 	{
-		for (tree_node* child : current->children)
+		for (const tree_node* child : current->children)
 		{
 			// printf("%d\n", child->uid);
 			inner_dfs_accumulate(child, acc, theta);
@@ -184,7 +184,7 @@ void inner_dfs_accumulate(barnes_hut::tree_node* current, accumulator_handle* ac
 
 std::complex<float> barnes_hut::quadtree::compute_force_accumulator(accumulator_handle* acc,
                                                                     const vec2& pos,
-                                                                    const float theta)
+                                                                    const float theta) const
 {
 	float2 us{};
 
