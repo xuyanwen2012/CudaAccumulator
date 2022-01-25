@@ -93,7 +93,6 @@ void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
 
 		qt.compute_force_accumulator(acc, 1.0f);
 
-
 		us[i].first += result.first;
 		us[i].second += result.second;
 	}
