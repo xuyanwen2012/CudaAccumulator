@@ -3,6 +3,7 @@
 #include <random>
 
 #include "accumulator.h"
+#include "bh_tree.h"
 #include "body.h"
 
 float my_rand(const float f_min = 0.0, const float f_max = 1.0)
@@ -43,11 +44,10 @@ void print_ground_truth(const float* xs, const float* ys, const float* masses, c
 	}
 }
 
-void run_naive_cuda(const std::vector<std::unique_ptr<body<float>>>& bodies,
+void run_naive_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
                     std::pair<float, float>* us,
                     const int num_bodies)
 {
-	// Compute
 	accumulator_handle* acc = get_accumulator();
 
 	for (int i = 0; i < num_bodies; ++i)
@@ -63,12 +63,43 @@ void run_naive_cuda(const std::vector<std::unique_ptr<body<float>>>& bodies,
 	release_accumulator(acc);
 }
 
+void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
+                 std::pair<float, float>* us,
+                 const int num_bodies)
+{
+	std::cout << "BH: Building the quadtree." << std::endl;
+
+	auto qt = barnes_hut::quadtree();
+
+	for (const auto& body : bodies)
+	{
+		qt.allocate_node_for_particle(body);
+	}
+
+	qt.compute_center_of_mass();
+
+	std::cout << "BH: Start Traversing the tree..." << std::endl;
+
+	accumulator_handle* acc = get_accumulator();
+
+	for (const auto& body : bodies)
+	{
+		const auto force = qt.compute_force_accumulator(acc, body->pos(), 1.0);
+		us->first = force.real();
+		us->first = force.imag();
+	}
+
+	release_accumulator(acc);
+
+	std::cout << "BH: Done! " << std::endl;
+}
+
 int main(int argc, char* argv[])
 {
 	constexpr int num_bodies = 6666;
 
 	// Inputs
-	std::vector<std::unique_ptr<body<float>>> bodies;
+	std::vector<std::shared_ptr<body<float>>> bodies;
 
 	bodies.reserve(num_bodies);
 	for (int i = 0; i < num_bodies; ++i)
@@ -80,7 +111,9 @@ int main(int argc, char* argv[])
 	//float2* us = new float2[num];
 	std::array<std::pair<float, float>, num_bodies> us{};
 
-	run_naive_cuda(bodies, us.data(), num_bodies);
+	//run_naive_cuda(bodies, us.data(), num_bodies);
+	run_bh_cuda(bodies, us.data(), num_bodies);
+
 
 	// Print result
 	for (int i = 0; i < 10; ++i)

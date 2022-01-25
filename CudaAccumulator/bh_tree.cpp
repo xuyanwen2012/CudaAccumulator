@@ -3,6 +3,14 @@
 #include <iostream>
 #include <algorithm>
 #include <queue>
+#include <vector_types.h>
+
+
+struct accumulator_handle
+{
+	float x;
+	float y;
+};
 
 void barnes_hut::tree_node::insert_body(const body_ptr& body_ptr)
 {
@@ -138,61 +146,53 @@ void barnes_hut::quadtree::compute_center_of_mass()
 	              });
 }
 
-std::complex<float> barnes_hut::quadtree::compute_force_at_iterative_dfs_array(
-	std::array<tree_node*, 1024>& stack, const vec2& pos, const float theta)
+void inner_dfs_accumulate(barnes_hut::tree_node* current, accumulator_handle* acc, float theta)
 {
-	std::complex<float> force;
+	using namespace barnes_hut;
 
-	size_t stack_cp = 0; // aka (stack current pointer)
+	const vec2 pos = {acc->x, acc->y};
 
-	// Push the root node to the stack
-	stack[++stack_cp] = &root_;
-
-	while (stack_cp != 0)
+	if (current->is_leaf())
 	{
-		// Pop from the stack as 'current'
-		const tree_node* current = stack[stack_cp];
-		stack[stack_cp--] = nullptr;
-
-		if (current->is_leaf_)
+		if (current->is_empty())
 		{
-			if (current->is_empty())
-			{
-				continue;
-			}
-
-			// On leaf nodes we reach the base case and we want to do the direct
-			// particle-to-particle computation.
-
-			force += direct_compute(current->content, pos);
+			return;
 		}
-		else if (check_theta(current, pos, theta))
-		{
-			// On non-leaf nodes if the current node is under a distance
-			// threshold (theta) then we approximate this node with a
-			// particle-to-node computation.
 
-			force += estimate_compute(current, pos);
-		}
-		else
+		//quadtree::direct_compute(current->content, pos);
+		accumulator_accumulate(current->content->x,
+		                       current->content->y,
+		                       current->content->mass,
+		                       acc);
+	}
+	else if (quadtree::check_theta(current, pos, theta))
+	{
+		//quadtree::estimate_compute(current, pos);
+		const auto cm = current->center_of_mass();
+		accumulator_accumulate(cm.real(),
+		                       cm.imag(),
+		                       current->node_mass,
+		                       acc);
+	}
+	else
+	{
+		for (tree_node* child : current->children)
 		{
-			// On non-leaf nodes and if the current node's distance is greater
-			// than the threshold we want to recursively visit its children. 
-
-			for (tree_node* child : current->children)
-			{
-				// Push the child to the stack
-				stack[++stack_cp] = child;
-			}
+			inner_dfs_accumulate(child, acc, theta);
 		}
 	}
-
-	return force;
 }
 
-std::complex<float> barnes_hut::quadtree::direct_compute(const body_ptr& body, const vec2& pos)
+std::complex<float> barnes_hut::quadtree::compute_force_accumulator(accumulator_handle* acc, const vec2& pos,
+                                                                    float theta)
 {
-	return {};
+	float2 us{};
+
+	accumulator_set_constants_and_result_address(pos.real(), pos.imag(), &us.x, acc);
+
+	inner_dfs_accumulate(&root_, acc, 1.0);
+
+	return {us.x, us.y};
 }
 
 bool barnes_hut::quadtree::check_theta(const tree_node* node, const vec2& pos, const float theta)
@@ -201,6 +201,7 @@ bool barnes_hut::quadtree::check_theta(const tree_node* node, const vec2& pos, c
 
 	//const std::complex<float> distance = com - pos;
 	//const auto norm = abs(distance);
+
 	static constexpr float softening = 1e-9f;
 	const float dx = com.real() - pos.imag();
 	const float dy = com.imag() - pos.imag();
@@ -209,13 +210,10 @@ bool barnes_hut::quadtree::check_theta(const tree_node* node, const vec2& pos, c
 
 	const auto geo_size = node->bounding_box.size.real();
 
+	//return geo_size / norm < theta;
 	return geo_size * inv_norm < theta;
 }
 
-std::complex<float> barnes_hut::quadtree::estimate_compute(const tree_node* node, const vec2& pos)
-{
-	return {};
-}
 
 size_t barnes_hut::quadtree::depth = 0;
 

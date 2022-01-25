@@ -6,6 +6,7 @@
 #include <type_traits>
 
 #include "body.h"
+#include "accumulator.h"
 
 namespace barnes_hut
 {
@@ -81,6 +82,8 @@ namespace barnes_hut
 		/// </summary>
 		std::complex<float> center_of_mass() const { return weighted_pos / node_mass; }
 
+		bool is_leaf() const { return is_leaf_; }
+
 	private:
 		bool is_leaf_;
 		void insert_body(const body_ptr& body_ptr);
@@ -110,29 +113,16 @@ namespace barnes_hut
 		/// </summary>
 		void compute_center_of_mass();
 
-		/// <summary>
-		/// 
-		/// </summary>
-		/// <param name="stack"></param>
-		/// <param name="pos"></param>
-		/// <param name="theta"></param>
-		/// <returns></returns>
-		std::complex<float> compute_force_at_iterative_dfs_array(
-			std::array<tree_node*, 1024>& stack,
-			const vec2& pos,
-			float theta
-		);
+		std::complex<float> compute_force_accumulator(accumulator_handle* acc, const vec2& pos, float theta);
 
 		// some statistical things
 		size_t num_particles;
 		static size_t num_nodes;
 		static size_t depth;
 
+		static inline bool check_theta(const tree_node* node, const vec2& pos, float theta);
+
 	private:
 		tree_node root_;
-
-		static inline bool check_theta(const tree_node* node, const vec2& pos, float theta);
-		static inline std::complex<float> direct_compute(const body_ptr& body, const vec2& pos);
-		static inline std::complex<float> estimate_compute(const tree_node* node, const vec2& pos);
 	};
 }
