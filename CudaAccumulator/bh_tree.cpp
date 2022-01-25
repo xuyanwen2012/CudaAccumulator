@@ -9,6 +9,7 @@ using namespace barnes_hut;
 
 struct accumulator_handle
 {
+	float* result_addr;
 	float x;
 	float y;
 };
@@ -124,7 +125,7 @@ void quadtree::compute_center_of_mass()
 	              {
 		              // sum the masses
 		              float mass_sum = 0.0f;
-		              std::complex<float> weighted_pos_sum{0, 0};
+		              std::complex<float> weighted_pos_sum{0.0f, 0.0f};
 		              if (node->is_leaf_)
 		              {
 			              if (node->content != nullptr)
@@ -151,12 +152,16 @@ void inner_dfs_accumulate(const tree_node* current, accumulator_handle* acc, con
 {
 	const vec2 pos = {acc->x, acc->y};
 
+	printf("%d: \n", current->uid);
+
 	if (current->is_leaf())
 	{
 		if (current->is_empty())
 		{
 			return;
 		}
+
+		printf("  += (%f,%f)\n", current->content->x, current->content->y);
 
 		accumulator_accumulate(current->content->x,
 		                       current->content->y,
@@ -166,6 +171,7 @@ void inner_dfs_accumulate(const tree_node* current, accumulator_handle* acc, con
 	else if (quadtree::check_theta(current, pos, theta))
 	{
 		const auto cm = current->center_of_mass();
+		printf("  += (%f,%f) (Node)\n", cm.real(), cm.imag());
 		accumulator_accumulate(cm.real(),
 		                       cm.imag(),
 		                       current->node_mass,
@@ -175,23 +181,15 @@ void inner_dfs_accumulate(const tree_node* current, accumulator_handle* acc, con
 	{
 		for (const tree_node* child : current->children)
 		{
-			// printf("%d\n", child->uid);
 			inner_dfs_accumulate(child, acc, theta);
 		}
 	}
 }
 
-std::complex<float> quadtree::compute_force_accumulator(accumulator_handle* acc,
-                                                        const vec2& pos,
-                                                        const float theta) const
+void quadtree::compute_force_accumulator(accumulator_handle* acc,
+                                         const float theta) const
 {
-	float2 us{};
-
-	accumulator_set_constants_and_result_address(pos.real(), pos.imag(), &us.x, acc);
-
 	inner_dfs_accumulate(&root_, acc, theta);
-
-	return {us.x, us.y};
 }
 
 bool quadtree::check_theta(const tree_node* node, const vec2& pos, const float theta)

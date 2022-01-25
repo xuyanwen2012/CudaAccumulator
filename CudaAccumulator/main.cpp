@@ -82,11 +82,17 @@ void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
 
 	accumulator_handle* acc = get_accumulator();
 
-	for (int i = 0; i < num_bodies; ++i)
+	for (int i = 0; i < 1; ++i)
 	{
-		const auto force = qt.compute_force_accumulator(acc, bodies[i]->pos(), 0.0f);
-		us[i].first += force.real();
-		us[i].second += force.imag();
+		const auto pos = bodies[i]->pos();
+
+		std::pair<float, float> result{};
+		accumulator_set_constants_and_result_address(pos.real(), pos.imag(), &result.first, acc);
+
+		qt.compute_force_accumulator(acc, 0.0f);
+
+		us[i].first += result.first;
+		us[i].second += result.second;
 	}
 
 	release_accumulator(acc);
@@ -96,7 +102,7 @@ void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
 
 int main()
 {
-	constexpr int num_bodies = 1234;
+	constexpr int num_bodies = 1024;
 
 	// Inputs
 	std::vector<std::shared_ptr<body<float>>> bodies;

@@ -115,7 +115,7 @@ namespace barnes_hut
 		/// </summary>
 		void compute_center_of_mass();
 
-		std::complex<float> compute_force_accumulator(accumulator_handle* acc, const vec2& pos, float theta) const;
+		void compute_force_accumulator(accumulator_handle* acc, float theta) const;
 
 		// some statistical things
 		size_t num_particles;

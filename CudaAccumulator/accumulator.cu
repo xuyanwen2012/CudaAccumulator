@@ -132,7 +132,6 @@ std::array<float2, 1> compute_with_cuda(const accumulator_handle* acc, const uns
 	                                                   acc->dev_forces,
 	                                                   n);
 
-	// TODO
 	force_reduction << <grid_size, block_size >> >(acc->dev_forces, acc->dev_result, n);
 
 
@@ -189,7 +188,7 @@ int check_and_clear_current_buffer(accumulator_handle* acc)
 		}
 
 
-		// Do the rest on CPU ( < 256)
+		// Do the rest on CPU ( < 32)
 		for (unsigned j = 0; j < remaining_n; ++j)
 		{
 			const auto dx = acc->x - acc->bodies_buf[j].x;
