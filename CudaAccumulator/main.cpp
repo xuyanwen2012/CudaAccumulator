@@ -58,6 +58,8 @@ void run_naive_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
 		{
 			accumulator_accumulate(bodies[j]->x, bodies[j]->y, bodies[j]->mass, acc);
 		}
+
+		accumulator_finish(acc);
 	}
 
 	release_accumulator(acc);
@@ -82,14 +84,15 @@ void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
 
 	accumulator_handle* acc = get_accumulator();
 
-	for (int i = 0; i < 10; ++i)
+	for (int i = 0; i < 1; ++i)
 	{
 		const auto pos = bodies[i]->pos();
 
 		std::pair<float, float> result{};
 		accumulator_set_constants_and_result_address(pos.real(), pos.imag(), &result.first, acc);
 
-		qt.compute_force_accumulator(acc, 0.0f);
+		qt.compute_force_accumulator(acc, 1.0f);
+
 
 		us[i].first += result.first;
 		us[i].second += result.second;

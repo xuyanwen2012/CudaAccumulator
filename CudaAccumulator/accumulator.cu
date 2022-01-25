@@ -186,11 +186,6 @@ int check_and_clear_current_buffer(accumulator_handle* acc)
 			                                                   acc->bodies_buf.end()).swap(acc->bodies_buf);
 		}
 
-		if (remaining_n > 0)
-		{
-			printf("	debug: %d was done on CPU \n", remaining_n);
-		}
-
 		// Do the rest on CPU ( < 32)
 		for (unsigned j = 0; j < remaining_n; ++j)
 		{
@@ -206,6 +201,11 @@ int check_and_clear_current_buffer(accumulator_handle* acc)
 		float* tmp = acc->result_addr;
 		tmp[0] += rem_force.x;
 		tmp[1] += rem_force.y;
+
+		if (remaining_n > 0)
+		{
+			printf("	debug: %d was done on CPU, force is now %f,%f \n", remaining_n, rem_force.x, rem_force.y);
+		}
 	}
 
 	return 0;
@@ -214,8 +214,6 @@ int check_and_clear_current_buffer(accumulator_handle* acc)
 
 int accumulator_set_constants_and_result_address(const float x, const float y, float* addr, accumulator_handle* acc)
 {
-	check_and_clear_current_buffer(acc);
-
 	acc->x = x;
 	acc->y = y;
 	acc->result_addr = addr;
@@ -225,13 +223,11 @@ int accumulator_set_constants_and_result_address(const float x, const float y, f
 }
 
 
-int release_accumulator(accumulator_handle* ret)
+int release_accumulator(const accumulator_handle* acc)
 {
-	check_and_clear_current_buffer(ret);
-
-	cudaFree(ret->dev_bodies);
-	cudaFree(ret->dev_forces);
-	cudaFree(ret->dev_result);
+	cudaFree(acc->dev_bodies);
+	cudaFree(acc->dev_forces);
+	cudaFree(acc->dev_result);
 
 	HANDLE_ERROR(cudaDeviceReset());
 	return 0;
@@ -240,6 +236,8 @@ int release_accumulator(accumulator_handle* ret)
 
 int accumulator_accumulate(const float x, const float y, const float mass, accumulator_handle* acc)
 {
+	printf("	 buf_size: %d/%d \n", acc->bodies_buf.size(), max_num_bodies_per_compute);
+
 	// Push this to the buffer 
 	acc->bodies_buf.push_back(make_float3(x, y, mass));
 
@@ -254,6 +252,13 @@ int accumulator_accumulate(const float x, const float y, const float mass, accum
 
 		acc->bodies_buf.clear();
 	}
+
+	return 0;
+}
+
+int accumulator_finish(accumulator_handle* acc)
+{
+	check_and_clear_current_buffer(acc);
 
 	return 0;
 }
