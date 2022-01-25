@@ -5,6 +5,7 @@
 #include <queue>
 #include <vector_types.h>
 
+using namespace barnes_hut;
 
 struct accumulator_handle
 {
@@ -12,7 +13,7 @@ struct accumulator_handle
 	float y;
 };
 
-void barnes_hut::tree_node::insert_body(const body_ptr& body_ptr)
+void tree_node::insert_body(const body_ptr& body_ptr)
 {
 	if (is_leaf_)
 	{
@@ -36,7 +37,7 @@ void barnes_hut::tree_node::insert_body(const body_ptr& body_ptr)
 	children.at(new_quadrant)->insert_body(body_ptr);
 }
 
-barnes_hut::tree_node::direction barnes_hut::tree_node::determine_quadrant(const vec2& pos) const
+tree_node::direction tree_node::determine_quadrant(const vec2& pos) const
 {
 	const auto cx = bounding_box.center.real();
 	const auto cy = bounding_box.center.imag();
@@ -58,7 +59,7 @@ barnes_hut::tree_node::direction barnes_hut::tree_node::determine_quadrant(const
 	return direction::ne;
 }
 
-void barnes_hut::tree_node::split()
+void tree_node::split()
 {
 	is_leaf_ = false;
 
@@ -84,19 +85,19 @@ void barnes_hut::tree_node::split()
 	children[3] = ne;
 }
 
-barnes_hut::quadtree::quadtree() :
+quadtree::quadtree() :
 	num_particles(0),
 	root_(tree_node{1, rect<float>{0.5f, 0.5f, 1.0f, 1.0f}, 0})
 {
 }
 
-void barnes_hut::quadtree::allocate_node_for_particle(const body_ptr& body_ptr)
+void quadtree::allocate_node_for_particle(const body_ptr& body_ptr)
 {
 	++num_particles;
 	root_.insert_body(body_ptr);
 }
 
-void barnes_hut::quadtree::compute_center_of_mass()
+void quadtree::compute_center_of_mass()
 {
 	std::queue<tree_node*> queue;
 	std::vector<tree_node*> list;
@@ -146,10 +147,8 @@ void barnes_hut::quadtree::compute_center_of_mass()
 	              });
 }
 
-void inner_dfs_accumulate(const barnes_hut::tree_node* current, accumulator_handle* acc, const float theta)
+void inner_dfs_accumulate(const tree_node* current, accumulator_handle* acc, const float theta)
 {
-	using namespace barnes_hut;
-
 	const vec2 pos = {acc->x, acc->y};
 
 	if (current->is_leaf())
@@ -182,9 +181,9 @@ void inner_dfs_accumulate(const barnes_hut::tree_node* current, accumulator_hand
 	}
 }
 
-std::complex<float> barnes_hut::quadtree::compute_force_accumulator(accumulator_handle* acc,
-                                                                    const vec2& pos,
-                                                                    const float theta) const
+std::complex<float> quadtree::compute_force_accumulator(accumulator_handle* acc,
+                                                        const vec2& pos,
+                                                        const float theta) const
 {
 	float2 us{};
 
@@ -195,7 +194,7 @@ std::complex<float> barnes_hut::quadtree::compute_force_accumulator(accumulator_
 	return {us.x, us.y};
 }
 
-bool barnes_hut::quadtree::check_theta(const tree_node* node, const vec2& pos, const float theta)
+bool quadtree::check_theta(const tree_node* node, const vec2& pos, const float theta)
 {
 	const std::complex<float> com = node->center_of_mass();
 
@@ -207,6 +206,6 @@ bool barnes_hut::quadtree::check_theta(const tree_node* node, const vec2& pos, c
 }
 
 
-size_t barnes_hut::quadtree::depth = 0;
+size_t quadtree::depth = 0;
 
-size_t barnes_hut::quadtree::num_nodes = 1;
+size_t quadtree::num_nodes = 1;
