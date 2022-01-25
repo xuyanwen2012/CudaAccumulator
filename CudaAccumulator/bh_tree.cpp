@@ -152,7 +152,7 @@ void inner_dfs_accumulate(const tree_node* current, accumulator_handle* acc, con
 {
 	const vec2 pos = {acc->x, acc->y};
 
-	printf("%d: \n", current->uid);
+	//printf("%d: \n", current->uid);
 
 	if (current->is_leaf())
 	{
@@ -161,7 +161,7 @@ void inner_dfs_accumulate(const tree_node* current, accumulator_handle* acc, con
 			return;
 		}
 
-		printf("  += (%f,%f)\n", current->content->x, current->content->y);
+		//printf("  += (%f,%f)\n", current->content->x, current->content->y);
 
 		accumulator_accumulate(current->content->x,
 		                       current->content->y,
@@ -171,7 +171,7 @@ void inner_dfs_accumulate(const tree_node* current, accumulator_handle* acc, con
 	else if (quadtree::check_theta(current, pos, theta))
 	{
 		const auto cm = current->center_of_mass();
-		printf("  += (%f,%f) (Node)\n", cm.real(), cm.imag());
+		//printf("  += (%f,%f) (Node)\n", cm.real(), cm.imag());
 		accumulator_accumulate(cm.real(),
 		                       cm.imag(),
 		                       current->node_mass,

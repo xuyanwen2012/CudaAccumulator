@@ -82,7 +82,7 @@ void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
 
 	accumulator_handle* acc = get_accumulator();
 
-	for (int i = 0; i < 1; ++i)
+	for (int i = 0; i < 10; ++i)
 	{
 		const auto pos = bodies[i]->pos();
 
@@ -102,7 +102,7 @@ void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
 
 int main()
 {
-	constexpr int num_bodies = 1024;
+	constexpr int num_bodies = 1024 + 511;
 
 	// Inputs
 	std::vector<std::shared_ptr<body<float>>> bodies;
@@ -114,7 +114,6 @@ int main()
 	}
 
 	// Outputs
-	//float2* us = new float2[num];
 	std::array<std::pair<float, float>, num_bodies> us{};
 
 	//run_naive_cuda(bodies, us.data(), num_bodies);

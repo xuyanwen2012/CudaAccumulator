@@ -115,12 +115,11 @@ __global__ void force_reduction(const float2* forces, float2* result, const size
 
 std::array<float2, 1> compute_with_cuda(const accumulator_handle* acc, const unsigned n)
 {
+	printf("	debug: shipped %d to GPU \n", n);
+
 	const unsigned bytes_f3 = n * sizeof(float3);
 
 	HANDLE_ERROR(cudaMemcpy(acc->dev_bodies, acc->bodies_buf.data(), bytes_f3, cudaMemcpyHostToDevice));
-
-	// So I think the block size is what the max thread of a block
-	//const unsigned grid_size = (n + block_size - 1) / block_size;
 
 	const unsigned block_size = n;
 	constexpr unsigned grid_size = 1;
@@ -187,6 +186,10 @@ int check_and_clear_current_buffer(accumulator_handle* acc)
 			                                                   acc->bodies_buf.end()).swap(acc->bodies_buf);
 		}
 
+		if (remaining_n > 0)
+		{
+			printf("	debug: %d was done on CPU \n", remaining_n);
+		}
 
 		// Do the rest on CPU ( < 32)
 		for (unsigned j = 0; j < remaining_n; ++j)
