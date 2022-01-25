@@ -8,6 +8,8 @@
 #include "body.h"
 #include "accumulator.h"
 
+// TODO macros about runtime info
+
 namespace barnes_hut
 {
 	template <typename T,

@@ -12,7 +12,7 @@ float my_rand(const float f_min = 0.0, const float f_max = 1.0)
 	return f_min + f * (f_max - f_min);
 }
 
-void print_ground_truth(const float* xs, const float* ys, const float* masses, const unsigned n)
+void print_ground_truth(const std::vector<std::shared_ptr<body<float>>>& bodies)
 {
 	constexpr unsigned n_to_print = 10;
 	std::array<std::pair<float, float>, n_to_print> us{};
@@ -20,15 +20,15 @@ void print_ground_truth(const float* xs, const float* ys, const float* masses, c
 	for (unsigned i = 0; i < n_to_print; ++i)
 	{
 		us[i] = {0.0f, 0.0f};
-		for (unsigned j = 0; j < n; ++j)
+		for (unsigned j = 0; j < bodies.size(); ++j)
 		{
-			const float dx = xs[i] - xs[j];
-			const float dy = ys[i] - ys[j];
+			const float dx = bodies[i]->x - bodies[j]->x;
+			const float dy = bodies[i]->y - bodies[j]->y;
 
 			const float dist_sqr = dx * dx + dy * dy + 1e-9f;
 			const float inv_dist = 1.0f / sqrtf(dist_sqr);
 			const float inv_dist3 = inv_dist * inv_dist * inv_dist;
-			const float with_mass = inv_dist3 * masses[j]; // z is the mass in this case
+			const float with_mass = inv_dist3 * bodies[j]->mass; // z is the mass in this case
 
 			us[i].first += dx * with_mass;
 			us[i].second += dy * with_mass;
@@ -96,7 +96,7 @@ void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
 
 int main(int argc, char* argv[])
 {
-	constexpr int num_bodies = 6666;
+	constexpr int num_bodies = 1234;
 
 	// Inputs
 	std::vector<std::shared_ptr<body<float>>> bodies;
@@ -111,8 +111,8 @@ int main(int argc, char* argv[])
 	//float2* us = new float2[num];
 	std::array<std::pair<float, float>, num_bodies> us{};
 
-	//run_naive_cuda(bodies, us.data(), num_bodies);
-	run_bh_cuda(bodies, us.data(), num_bodies);
+	run_naive_cuda(bodies, us.data(), num_bodies);
+	//run_bh_cuda(bodies, us.data(), num_bodies);
 
 
 	// Print result
@@ -121,7 +121,7 @@ int main(int argc, char* argv[])
 		std::cout << '(' << us[i].first << ", " << us[i].second << ')' << std::endl;
 	}
 
-	//print_ground_truth(xs.data(), ys.data(), masses.data(), num_bodies);
+	print_ground_truth(bodies);
 
 	return EXIT_SUCCESS;
 }

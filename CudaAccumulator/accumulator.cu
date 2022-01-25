@@ -80,22 +80,15 @@ __global__ void body_compute_forces(const float3 body, const float3* bodies, flo
 	}
 }
 
-
+//TODO: prepare 32-1024
 __global__ void force_reduction(const float2* forces, float2* result, const size_t n)
 {
-	constexpr size_t sm_size = 256;
+	constexpr size_t sm_size = 1024;
 	__shared__ float2 partial_sum[sm_size];
 
 	const size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-	if (tid < n)
-	{
-		partial_sum[threadIdx.x] = forces[tid];
-	}
-	else
-	{
-		partial_sum[threadIdx.x] = {0.0f, 0.0f};
-	}
+	partial_sum[threadIdx.x] = forces[tid];
 
 	__syncthreads();
 
@@ -125,8 +118,10 @@ std::array<float2, 1> compute_with_cuda(const accumulator_handle* acc, const uns
 	HANDLE_ERROR(cudaMemcpy(acc->dev_bodies, acc->bodies_buf.data(), bytes_f3, cudaMemcpyHostToDevice));
 
 	// So I think the block size is what the max thread of a block
-	constexpr unsigned block_size = 256;
-	const unsigned grid_size = (n + block_size - 1) / block_size;
+	//const unsigned grid_size = (n + block_size - 1) / block_size;
+
+	const unsigned block_size = n;
+	constexpr unsigned grid_size = 1;
 
 	const auto source_body = make_float3(acc->x, acc->y, 1.0f);
 
@@ -135,21 +130,9 @@ std::array<float2, 1> compute_with_cuda(const accumulator_handle* acc, const uns
 	                                                   acc->dev_forces,
 	                                                   n);
 
-	//printf("----Debug-----\n");
-	//constexpr unsigned n_to_ins = 10;
-	//std::array<float2, n_to_ins> inspect_segment{};
-	//HANDLE_ERROR(cudaMemcpy(inspect_segment.data(), acc->dev_forces, n_to_ins * sizeof(float2), cudaMemcpyDeviceToHost));
-
-	//for (unsigned i = 0; i < n_to_ins; ++i)
-	//{
-	//	printf("%f,%f\n", inspect_segment[i].x, inspect_segment[i].y);
-	//}
-
-	//printf("----Debug-----\n");
-
-
-	force_reduction << <grid_size, block_size >> >(acc->dev_forces, acc->dev_result, n);
-	force_reduction << <1, block_size >> >(acc->dev_result, acc->dev_result, n);
+	// TODO
+	force_reduction << <1, block_size >> >(acc->dev_forces, acc->dev_result, n);
+	//force_reduction << <1, block_size >> >(acc->dev_result, acc->dev_result, n);
 
 
 	std::array<float2, 1> result{};
@@ -191,25 +174,26 @@ int check_and_clear_current_buffer(accumulator_handle* acc)
 
 		float2 rem_force = {};
 
-		while (remaining_n > 256)
-		{
-			const uint32_t previous_pow_of_2 = flp2(remaining_n);
-			// TODO: currently using ugly solution, need to ask Tyler
-			cudaMemset(acc->dev_result, 0, acc->max_num_bodies_per_compute * sizeof(float2));
+		//// TODO: 32
+		//while (remaining_n > 256)
+		//{
+		//	const uint32_t previous_pow_of_2 = flp2(remaining_n);
+		//	// TODO: currently using ugly solution, need to ask Tyler
+		//	cudaMemset(acc->dev_result, 0, acc->max_num_bodies_per_compute * sizeof(float2));
 
-			const auto result = compute_with_cuda(acc, previous_pow_of_2);
-			rem_force.x += result[0].x;
-			rem_force.y += result[0].y;
+		//	const auto result = compute_with_cuda(acc, previous_pow_of_2);
+		//	rem_force.x += result[0].x;
+		//	rem_force.y += result[0].y;
 
-			remaining_n -= previous_pow_of_2;
+		//	remaining_n -= previous_pow_of_2;
 
-			// drop the first 'previous_pow_of_2' particles
-			std::vector<decltype(acc->bodies_buf)::value_type>(acc->bodies_buf.begin() + previous_pow_of_2,
-			                                                   acc->bodies_buf.end()).swap(acc->bodies_buf);
+		//	// drop the first 'previous_pow_of_2' particles
+		//	std::vector<decltype(acc->bodies_buf)::value_type>(acc->bodies_buf.begin() + previous_pow_of_2,
+		//	                                                   acc->bodies_buf.end()).swap(acc->bodies_buf);
 
-			// DEBUG LOG
-			//printf("-- previous_pow_of_2 %d, remaining_n: %d\n", previous_pow_of_2, remaining_n);
-		}
+		//	// DEBUG LOG
+		//	//printf("-- previous_pow_of_2 %d, remaining_n: %d\n", previous_pow_of_2, remaining_n);
+		//}
 
 
 		// Do the rest on CPU ( < 256)
