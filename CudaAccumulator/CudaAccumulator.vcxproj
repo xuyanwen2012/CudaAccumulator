@@ -82,6 +82,7 @@
   <ItemGroup>
     <ClCompile Include="bh_tree.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="util.cpp" />
     <Text Include="Makefile">
       <FileType>Document</FileType>
     </Text>
@@ -91,6 +92,7 @@
     <ClInclude Include="bh_tree.h" />
     <ClInclude Include="body.h" />
     <ClInclude Include="cu_nbody.cuh" />
+    <ClInclude Include="util.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include=".gitignore" />

@@ -18,9 +18,3 @@ static void handle_error(const cudaError_t err,
 }
 
 #define HANDLE_ERROR( err ) (handle_error( err, __FILE__, __LINE__ ))
-
-struct universe
-{
-	double3* pos;
-	double2* u;
-};

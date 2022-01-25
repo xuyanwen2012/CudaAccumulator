@@ -162,10 +162,10 @@ accumulator_handle* get_accumulator()
 
 int check_and_clear_current_buffer(accumulator_handle* acc)
 {
+	// Finished the remaining bodies in the buffer before switching context
 	if (!acc->bodies_buf.empty())
 	{
-		// Finished the remaining bodies in the buffer before switching context
-		uint32_t remaining_n = acc->bodies_buf.size();
+		auto remaining_n = static_cast<uint32_t>(acc->bodies_buf.size());
 
 		float2 rem_force = {};
 

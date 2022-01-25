@@ -3,7 +3,6 @@
 #include <iostream>
 #include <algorithm>
 #include <queue>
-#include <vector_types.h>
 
 using namespace barnes_hut;
 

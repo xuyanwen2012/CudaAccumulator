@@ -2,59 +2,23 @@
 #include <iostream>
 #include <random>
 
+#include "util.h"
 #include "accumulator.h"
 #include "bh_tree.h"
 #include "body.h"
 
-float my_rand(const float f_min = 0.0, const float f_max = 1.0)
-{
-	const float f = static_cast<float>(rand()) / RAND_MAX;
-	return f_min + f * (f_max - f_min);
-}
-
-void print_ground_truth(const std::vector<std::shared_ptr<body<float>>>& bodies)
-{
-	constexpr unsigned n_to_print = 10;
-	std::array<std::pair<float, float>, n_to_print> us{};
-
-	for (unsigned i = 0; i < n_to_print; ++i)
-	{
-		us[i] = {0.0f, 0.0f};
-		for (unsigned j = 0; j < bodies.size(); ++j)
-		{
-			const float dx = bodies[i]->x - bodies[j]->x;
-			const float dy = bodies[i]->y - bodies[j]->y;
-
-			const float dist_sqr = dx * dx + dy * dy + 1e-9f;
-			const float inv_dist = 1.0f / sqrtf(dist_sqr);
-			const float inv_dist3 = inv_dist * inv_dist * inv_dist;
-			const float with_mass = inv_dist3 * bodies[j]->mass; // z is the mass in this case
-
-			us[i].first += dx * with_mass;
-			us[i].second += dy * with_mass;
-		}
-	}
-
-	std::cout << "==================" << std::endl;
-	for (unsigned i = 0; i < n_to_print; ++i)
-	{
-		std::cout << '('
-			<< us[i].first << ", "
-			<< us[i].second << ')' << std::endl;
-	}
-}
 
 void run_naive_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
-                    std::pair<float, float>* us,
-                    const int num_bodies)
+                    std::pair<float, float>* us)
 {
-	accumulator_handle* acc = get_accumulator();
+	const size_t num_bodies = bodies.size();
 
-	for (int i = 0; i < num_bodies; ++i)
+	accumulator_handle* acc = get_accumulator();
+	for (size_t i = 0; i < num_bodies; ++i)
 	{
 		accumulator_set_constants_and_result_address(bodies[i]->x, bodies[i]->y, &us[i].first, acc);
 
-		for (int j = 0; j < num_bodies; ++j)
+		for (size_t j = 0; j < num_bodies; ++j)
 		{
 			accumulator_accumulate(bodies[j]->x, bodies[j]->y, bodies[j]->mass, acc);
 		}
@@ -66,8 +30,7 @@ void run_naive_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
 }
 
 void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
-                 std::pair<float, float>* us,
-                 const int num_bodies)
+                 std::pair<float, float>* us)
 {
 	std::cout << "BH: Building the quadtree." << std::endl;
 
@@ -84,7 +47,8 @@ void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
 
 	accumulator_handle* acc = get_accumulator();
 
-	for (int i = 0; i < num_bodies; ++i)
+	const size_t num_bodies = bodies.size();
+	for (size_t i = 0; i < num_bodies; ++i)
 	{
 		const auto pos = bodies[i]->pos();
 
@@ -104,7 +68,7 @@ void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
 
 int main()
 {
-	constexpr int num_bodies = 1024 + 511;
+	constexpr int num_bodies = 1024 * 10;
 
 	// Inputs
 	std::vector<std::shared_ptr<body<float>>> bodies;
@@ -116,10 +80,15 @@ int main()
 	}
 
 	// Outputs
-	std::array<std::pair<float, float>, num_bodies> us{};
+	const auto us = static_cast<std::pair<float, float>*>(malloc(num_bodies * sizeof(std::pair<float, float>)));
+	for (int i = 0; i < num_bodies; ++i)
+	{
+		us[i].first = 0.0f;
+		us[i].second = 0.0f;
+	}
 
-	//run_naive_cuda(bodies, us.data(), num_bodies);
-	run_bh_cuda(bodies, us.data(), num_bodies);
+	//run_naive_cuda(bodies, us.data());
+	run_bh_cuda(bodies, us);
 
 	// Print result
 	for (int i = 0; i < 10; ++i)
