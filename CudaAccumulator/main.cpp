@@ -84,7 +84,7 @@ void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
 
 	accumulator_handle* acc = get_accumulator();
 
-	for (int i = 0; i < 1; ++i)
+	for (int i = 0; i < num_bodies; ++i)
 	{
 		const auto pos = bodies[i]->pos();
 

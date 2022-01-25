@@ -115,7 +115,7 @@ __global__ void force_reduction(const float2* forces, float2* result, const size
 
 std::array<float2, 1> compute_with_cuda(const accumulator_handle* acc, const unsigned n)
 {
-	printf("	debug: shipped %d to GPU \n", n);
+	// printf("	debug: shipped %d to GPU \n", n);
 
 	const unsigned bytes_f3 = n * sizeof(float3);
 
@@ -202,10 +202,10 @@ int check_and_clear_current_buffer(accumulator_handle* acc)
 		tmp[0] += rem_force.x;
 		tmp[1] += rem_force.y;
 
-		if (remaining_n > 0)
-		{
-			printf("	debug: %d was done on CPU, force is now %f,%f \n", remaining_n, rem_force.x, rem_force.y);
-		}
+		//if (remaining_n > 0)
+		//{
+		//	printf("	debug: %d was done on CPU, force is now %f,%f \n", remaining_n, rem_force.x, rem_force.y);
+		//}
 	}
 
 	return 0;
@@ -236,7 +236,7 @@ int release_accumulator(const accumulator_handle* acc)
 
 int accumulator_accumulate(const float x, const float y, const float mass, accumulator_handle* acc)
 {
-	printf("	 buf_size: %d/%d \n", acc->bodies_buf.size(), max_num_bodies_per_compute);
+	// printf("	 buf_size: %d/%d \n", acc->bodies_buf.size(), max_num_bodies_per_compute);
 
 	// Push this to the buffer 
 	acc->bodies_buf.push_back(make_float3(x, y, mass));
