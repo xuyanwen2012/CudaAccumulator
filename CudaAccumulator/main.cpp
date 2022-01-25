@@ -81,19 +81,25 @@ int main()
 
 	// Outputs
 	const auto us = static_cast<std::pair<float, float>*>(malloc(num_bodies * sizeof(std::pair<float, float>)));
-	for (int i = 0; i < num_bodies; ++i)
+	if (us != nullptr)
 	{
-		us[i].first = 0.0f;
-		us[i].second = 0.0f;
+		for (int i = 0; i < num_bodies; ++i)
+		{
+			us[i].first = 0.0f;
+			us[i].second = 0.0f;
+		}
 	}
 
 	//run_naive_cuda(bodies, us.data());
 	run_bh_cuda(bodies, us);
 
 	// Print result
-	for (int i = 0; i < 10; ++i)
+	if (us != nullptr)
 	{
-		std::cout << '(' << us[i].first << ", " << us[i].second << ')' << std::endl;
+		for (int i = 0; i < 10; ++i)
+		{
+			std::cout << '(' << us[i].first << ", " << us[i].second << ')' << std::endl;
+		}
 	}
 
 	print_ground_truth(bodies);
