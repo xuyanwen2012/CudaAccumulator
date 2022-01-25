@@ -77,13 +77,25 @@
     </CudaCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <CudaCompile Include="cu_nbody.cu" />
+    <CudaCompile Include="accumulator.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="bh_tree.cpp" />
     <ClCompile Include="main.cpp" />
+    <ClCompile Include="util.cpp" />
+    <Text Include="Makefile">
+      <FileType>Document</FileType>
+    </Text>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="accumulator.h" />
+    <ClInclude Include="bh_tree.h" />
+    <ClInclude Include="body.h" />
     <ClInclude Include="cu_nbody.cuh" />
+    <ClInclude Include="util.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include=".gitignore" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
