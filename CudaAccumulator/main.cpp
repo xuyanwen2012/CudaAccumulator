@@ -94,7 +94,7 @@ void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
 	std::cout << "BH: Done! " << std::endl;
 }
 
-int main(int argc, char* argv[])
+int main()
 {
 	constexpr int num_bodies = 1234;
 
