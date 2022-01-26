@@ -1,12 +1,11 @@
 #include <array>
+#include <chrono>
 #include <iostream>
-#include <random>
 
 #include "util.h"
 #include "accumulator.h"
 #include "bh_tree.h"
 #include "body.h"
-
 
 void run_naive_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
                     std::pair<float, float>* us)
@@ -34,14 +33,18 @@ void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
 {
 	std::cout << "BH: Building the quadtree." << std::endl;
 
-	auto qt = barnes_hut::quadtree();
+	TIME_THIS_SEGMENT(
 
-	for (const auto& body : bodies)
-	{
+		auto qt = barnes_hut::quadtree();
+
+		for (const auto& body : bodies)
+		{
 		qt.allocate_node_for_particle(body);
-	}
+		}
 
-	qt.compute_center_of_mass();
+		qt.compute_center_of_mass();
+
+	)
 
 	std::cout << "BH: Start Traversing the tree..." << std::endl;
 
@@ -68,7 +71,7 @@ void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
 
 int main()
 {
-	constexpr int num_bodies = 1024 * 10;
+	constexpr int num_bodies = 1024 * 100;
 
 	// Inputs
 	std::vector<std::shared_ptr<body<float>>> bodies;

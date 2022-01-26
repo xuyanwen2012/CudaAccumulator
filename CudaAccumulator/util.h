@@ -5,21 +5,13 @@
 
 #include "body.h"
 
-#include <chrono>
+#define TIME_THIS_SEGMENT(lines)  \
+const auto start = std::chrono::steady_clock::now();\
+lines;\
+const auto end = std::chrono::steady_clock::now();\
+const std::chrono::duration<double> elapsed_seconds = end - start;\
+std::cout << "- elapsed time: " << elapsed_seconds.count() << "s\n";
 
-//static void debug_print()
-//{
-//	constexpr bool show_log = true;
-//
-//	if (show_log)
-//	{
-//		printf("%s in %s at line %d\n");
-//	}
-//}
-//
-//#define HANDLE_ERROR(  ) (debug_print(  ))
-
-
-float my_rand(float f_min = 0.0, float f_max = 1.0);
+float my_rand();
 
 void print_ground_truth(const std::vector<std::shared_ptr<body<float>>>& bodies);
