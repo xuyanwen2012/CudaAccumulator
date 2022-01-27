@@ -33,22 +33,20 @@ void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
 {
 	std::cout << "BH: Building the quadtree." << std::endl;
 
-	TIME_THIS_SEGMENT(
+	auto qt = barnes_hut::quadtree();
 
-		auto qt = barnes_hut::quadtree();
-
-		for (const auto& body : bodies)
-		{
+	for (const auto& body : bodies)
+	{
 		qt.allocate_node_for_particle(body);
-		}
+	}
 
-		qt.compute_center_of_mass();
-
-	)
+	qt.compute_center_of_mass();
 
 	std::cout << "BH: Start Traversing the tree..." << std::endl;
 
 	accumulator_handle* acc = get_accumulator();
+
+	const auto start = std::chrono::steady_clock::now();
 
 	const size_t num_bodies = bodies.size();
 	for (size_t i = 0; i < num_bodies; ++i)
@@ -58,11 +56,15 @@ void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
 		std::pair<float, float> result{};
 		accumulator_set_constants_and_result_address(pos.real(), pos.imag(), &result.first, acc);
 
-		qt.compute_force_accumulator(acc, 1.0f);
+		qt.compute_force_accumulator(acc, 0.1f);
 
 		us[i].first += result.first;
 		us[i].second += result.second;
 	}
+
+	const auto end = std::chrono::steady_clock::now();
+	const std::chrono::duration<double> elapsed_seconds = end - start;
+	std::cout << "- elapsed time: " << elapsed_seconds.count() << "s\n";
 
 	release_accumulator(acc);
 
