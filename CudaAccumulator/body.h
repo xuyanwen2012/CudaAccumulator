@@ -4,7 +4,7 @@
 #include <complex>
 
 template <typename T,
-          typename = std::enable_if<std::is_floating_point_v<T>, T>>
+          typename = std::enable_if<std::is_floating_point<T>::value, T>>
 struct body
 {
 	body(T x, T y, T mass) : x(x), y(y), mass(mass)
