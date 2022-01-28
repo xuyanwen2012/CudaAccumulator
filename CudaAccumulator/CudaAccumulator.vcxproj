@@ -80,6 +80,7 @@
     <CudaCompile Include="accumulator.cu" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="accumulator_c.cpp" />
     <ClCompile Include="bh_tree.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="util.cpp" />
