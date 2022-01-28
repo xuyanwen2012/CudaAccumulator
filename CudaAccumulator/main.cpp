@@ -73,7 +73,7 @@ void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
 
 int main()
 {
-	constexpr int num_bodies = 1024 * 10;
+	constexpr int num_bodies = 1024 * 100;
 
 	// Inputs
 	std::vector<std::shared_ptr<body<float>>> bodies;
