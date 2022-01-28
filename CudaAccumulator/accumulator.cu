@@ -188,7 +188,7 @@ int accumulator_set_constants_and_result_address(const float x, const float y, f
 }
 
 
-int release_accumulator(const accumulator_handle* acc)
+int release_accumulator(accumulator_handle* acc)
 {
 	cudaFree(acc->uni_bodies);
 	cudaFree(acc->uni_results);
