@@ -71,35 +71,6 @@ float2 kernel_func_cpu(const float dx, const float dy, const float mass)
 }
 
 
-//TODO: prepare 32-1024
-__global__ void force_reduction(const float3 source_body, const float3* bodies, float2* result, const size_t n)
-{
-	__shared__ float2 partial_sum[max_num_bodies_per_compute];
-
-	const size_t tid = blockIdx.x * blockDim.x + threadIdx.x;
-
-	partial_sum[threadIdx.x] = kernel_func_gpu(source_body, bodies[tid]);
-
-	__syncthreads();
-
-	for (size_t s = 1; s < blockDim.x; s *= 2)
-	{
-		if (threadIdx.x % (2 * s) == 0)
-		{
-			const auto body_q = partial_sum[threadIdx.x + s];
-
-			partial_sum[threadIdx.x].x += body_q.x;
-			partial_sum[threadIdx.x].y += body_q.y;
-		}
-		__syncthreads();
-	}
-
-	if (threadIdx.x == 0)
-	{
-		result[blockIdx.x] = partial_sum[0];
-	}
-}
-
 __global__ void force_reduction_2(const float3 source_body, const float3* bodies, float2* result, const size_t n)
 {
 	__shared__ float2 partial_sum[max_num_bodies_per_compute];
