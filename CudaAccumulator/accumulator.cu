@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cuda_runtime_api.h>
+#include <map>
 #include <vector>
 #include <vector_functions.h>
 
@@ -44,6 +45,21 @@ uint32_t flp2(uint32_t x)
 	return x - (x >> 1);
 }
 
+
+unsigned get_previous_pow_of_2(unsigned n)
+{
+	static std::map<unsigned, unsigned> lookup_table{};
+
+	const auto val = lookup_table.find(n);
+	if (val == lookup_table.end())
+	{
+		const unsigned v = flp2(n);
+		lookup_table.insert(std::make_pair(n, v));
+		return v;
+	}
+
+	return val->second;
+}
 
 __device__ float2 kernel_func_gpu(const float3 p, const float3 q)
 {
@@ -132,7 +148,7 @@ accumulator_handle* get_accumulator()
 }
 
 
-int check_and_clear_current_buffer(accumulator_handle* acc)
+int check_and_clear_current_buffer(const accumulator_handle* acc)
 {
 	// Finished the remaining bodies in the buffer before switching context
 	if (acc->body_count != 0)
@@ -144,7 +160,7 @@ int check_and_clear_current_buffer(accumulator_handle* acc)
 		unsigned current_index = 0;
 		while (remaining_n >= 32)
 		{
-			const uint32_t previous_pow_of_2 = flp2(remaining_n);
+			const auto previous_pow_of_2 = get_previous_pow_of_2(remaining_n);
 
 			const auto result = compute_with_cuda(acc, current_index, previous_pow_of_2);
 			rem_force.x += result.x;

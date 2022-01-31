@@ -74,7 +74,7 @@ int main(const int argc, char* argv[])
 		("t,theta", "Theta value for BH tree", cxxopts::value<float>())
 		("v,verbose", "Verbose output", cxxopts::value<bool>()->default_value("false"));
 
-	int num_bodies = 1024;
+	int num_bodies = 1024*100;
 	float theta = 0.75f;
 
 	const auto result = options.parse(argc, argv);
