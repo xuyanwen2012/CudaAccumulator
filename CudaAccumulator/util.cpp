@@ -44,8 +44,8 @@ std::pair<T, T> cpu_kernel_func_debug(T x0, T y0, T mass, T x1, T y1)
 
 float compute_rmse(const body_container& bodies,
                    const pair_f* us,
-                   const size_t samples = 100,
-                   const bool show_results = true)
+                   const size_t samples,
+                   const bool show_results)
 {
 	assert(samples >= 10);
 
