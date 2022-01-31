@@ -11,7 +11,7 @@
 namespace barnes_hut
 {
 	template <typename T,
-	          typename = std::enable_if<my_is_floating_point_v<T>, T>>
+	          typename = std::enable_if<std::is_floating_point<T>::value, T>>
 	struct rect
 	{
 		rect() = default;
