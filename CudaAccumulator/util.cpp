@@ -91,7 +91,7 @@ float compute_rmse(const body_container& bodies,
 
 	// Compute the RMSE
 	float rmse{};
-#pragma omp parallel for reduction(+:sum)
+#pragma omp parallel for
 	for (size_t i = 0; i < samples; ++i)
 	{
 		const auto dx = ground_truth[i].first - us[i].first;
