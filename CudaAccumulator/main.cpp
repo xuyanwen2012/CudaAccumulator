@@ -49,7 +49,7 @@ void run_bh_cuda(const body_container& bodies,
 	std::cout << "BH: Done! " << std::endl;
 }
 
-body_container init_bodies(int n)
+body_container init_bodies(const int n)
 {
 	body_container bodies;
 	bodies.reserve(n);
@@ -68,17 +68,9 @@ int main()
 	assert(num_bodies >= 1024);
 
 	const body_container bodies = init_bodies(num_bodies);
-
 	const auto us = make_output_array<pair_f>(num_bodies);
 
-	// Run
 	run_bh_cuda(bodies, us, 0.0f);
-
-	// Print result, some sneaky peek + RMSE 
-	for (int i = 0; i < 10; ++i)
-	{
-		std::cout << '(' << us[i].first << ", " << us[i].second << ')' << std::endl;
-	}
 
 	std::cout << "RMSE: " << compute_rmse(bodies, us, 1024) << std::endl;
 

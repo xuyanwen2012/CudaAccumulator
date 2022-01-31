@@ -50,6 +50,7 @@ float compute_rmse(const body_container& bodies,
 
 	const auto ground_truth = make_output_array<pair_f>(samples);
 
+	// Compute ground truth
 #pragma omp parallel for schedule(dynamic)
 	for (size_t i = 0; i < samples; ++i)
 	{
@@ -66,8 +67,16 @@ float compute_rmse(const body_container& bodies,
 		}
 	}
 
-	std::cout << "==================" << std::endl;
+	// Print (part of) Result vs. Ground truth
 	constexpr unsigned n_to_print = 10;
+
+	for (unsigned i = 0; i < n_to_print; ++i)
+	{
+		std::cout << '(' << us[i].first << ", " << us[i].second << ')' << std::endl;
+	}
+
+	std::cout << "==================" << std::endl;
+
 	for (unsigned i = 0; i < n_to_print; ++i)
 	{
 		std::cout << '('
@@ -76,6 +85,7 @@ float compute_rmse(const body_container& bodies,
 			<< std::endl;
 	}
 
+	// Compute the RMSE
 	float rmse{};
 #pragma omp parallel for reduction(+:sum)
 	for (size_t i = 0; i < samples; ++i)
