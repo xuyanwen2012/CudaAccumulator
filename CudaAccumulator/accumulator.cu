@@ -158,6 +158,7 @@ int check_and_clear_current_buffer(const accumulator_handle* acc)
 		float2 rem_force = {};
 
 		unsigned current_index = 0;
+
 		while (remaining_n >= 32)
 		{
 			const auto previous_pow_of_2 = get_previous_pow_of_2(remaining_n);
@@ -165,6 +166,10 @@ int check_and_clear_current_buffer(const accumulator_handle* acc)
 			const auto result = compute_with_cuda(acc, current_index, previous_pow_of_2);
 			rem_force.x += result.x;
 			rem_force.y += result.y;
+
+			//static int count = 0;
+			//printf("shipment %d: %d\n", count, previous_pow_of_2);
+			//++count;
 
 			remaining_n -= previous_pow_of_2;
 
