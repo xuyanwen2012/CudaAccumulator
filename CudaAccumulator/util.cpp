@@ -2,6 +2,7 @@
 
 #ifdef _WIN32
 #include <random>
+
 float my_rand()
 {
 	static thread_local std::mt19937 generator; // NOLINT(cert-msc51-cpp)
@@ -11,6 +12,7 @@ float my_rand()
 #endif
 
 #ifdef __linux__
+#include "cstdlib"
 float my_rand()
 {
 	constexpr float f_min = 0.0f;
