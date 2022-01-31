@@ -18,4 +18,5 @@ float my_rand();
 
 float compute_rmse(const body_container& bodies,
                    const pair_f* us,
-                   size_t samples);
+                   size_t samples = 100,
+                   bool show_results = true);
