@@ -92,6 +92,7 @@
     <ClInclude Include="bh_tree.h" />
     <ClInclude Include="body.h" />
     <ClInclude Include="cu_nbody.cuh" />
+    <ClInclude Include="cxxopts\cxxopts.hpp" />
     <ClInclude Include="util.h" />
   </ItemGroup>
   <ItemGroup>

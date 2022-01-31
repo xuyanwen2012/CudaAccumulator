@@ -4,6 +4,8 @@
 #include <iostream>
 #include <vector>
 
+#include "cxxopts/cxxopts.hpp"
+
 #include "util.h"
 #include "accumulator.h"
 #include "bh_tree.h"
@@ -62,15 +64,40 @@ body_container init_bodies(const int n)
 	return bodies;
 }
 
-int main()
+
+int main(int argc, char* argv[])
 {
-	constexpr int num_bodies = 1024;
+	cxxopts::Options options("N-body Tree Code", "Heterogeneous Computing N-body Problem Solver");
+	options.add_options()
+		("d,debug", "Enable debugging")
+		("n,num", "Number of particles", cxxopts::value<int>())
+		("t,theta", "Theta value for BH tree", cxxopts::value<float>())
+		("v,verbose", "Verbose output", cxxopts::value<bool>()->default_value("false"));
+
+	int num_bodies = 1024;
+	float theta = 0.75f;
+
+	const auto result = options.parse(argc, argv);
+	if (result.count("num"))
+	{
+		num_bodies = result["num"].as<int>();
+	}
+
+	if (result.count("theta"))
+	{
+		theta = result["theta"].as<float>();
+	}
+
 	assert(num_bodies >= 1024);
+	assert(theta >= 0.0f && theta <= 2.0f);
+
+	std::cout << "Started random problem with " << num_bodies << " particles." << std::endl;
+	std::cout << "Theta value is " << theta << '.' << std::endl;
 
 	const body_container bodies = init_bodies(num_bodies);
 	const auto us = make_output_array<pair_f>(num_bodies);
 
-	run_bh_cuda(bodies, us, 0.0f);
+	run_bh_cuda(bodies, us, theta);
 
 	std::cout << "RMSE: " << compute_rmse(bodies, us, 1024) << std::endl;
 

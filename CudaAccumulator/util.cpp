@@ -44,7 +44,8 @@ std::pair<T, T> cpu_kernel_func_debug(T x0, T y0, T mass, T x1, T y1)
 
 float compute_rmse(const body_container& bodies,
                    const pair_f* us,
-                   const size_t samples = 100)
+                   const size_t samples = 100,
+                   const bool show_results = true)
 {
 	assert(samples >= 10);
 
@@ -68,21 +69,24 @@ float compute_rmse(const body_container& bodies,
 	}
 
 	// Print (part of) Result vs. Ground truth
-	constexpr unsigned n_to_print = 10;
-
-	for (unsigned i = 0; i < n_to_print; ++i)
+	if (show_results)
 	{
-		std::cout << '(' << us[i].first << ", " << us[i].second << ')' << std::endl;
-	}
+		constexpr unsigned n_to_print = 10;
 
-	std::cout << "==================" << std::endl;
+		for (unsigned i = 0; i < n_to_print; ++i)
+		{
+			std::cout << '(' << us[i].first << ", " << us[i].second << ')' << std::endl;
+		}
 
-	for (unsigned i = 0; i < n_to_print; ++i)
-	{
-		std::cout << '('
-			<< ground_truth[i].first << ", "
-			<< ground_truth[i].second << ')'
-			<< std::endl;
+		std::cout << "==================" << std::endl;
+
+		for (unsigned i = 0; i < n_to_print; ++i)
+		{
+			std::cout << '('
+				<< ground_truth[i].first << ", "
+				<< ground_truth[i].second << ')'
+				<< std::endl;
+		}
 	}
 
 	// Compute the RMSE
