@@ -37,7 +37,7 @@ std::pair<T, T> cpu_kernel_func_debug(T x0, T y0, T mass, T x1, T y1)
 	const float dist_sqr = dx * dx + dy * dy + 1e-9f;
 	const float inv_dist = 1.0f / sqrtf(dist_sqr);
 	const float inv_dist3 = inv_dist * inv_dist * inv_dist;
-	const float with_mass = inv_dist3 * mass; 
+	const float with_mass = inv_dist3 * mass;
 
 	return {dx * with_mass, dy * with_mass};
 }
@@ -48,8 +48,7 @@ float compute_rmse(const body_container& bodies,
 {
 	assert(samples >= 10);
 
-	constexpr auto bytes_2_f = sizeof(pair_f);
-	const auto ground_truth = static_cast<pair_f*>(calloc(samples, bytes_2_f));
+	const auto ground_truth = make_output_array<pair_f>(samples);
 
 #pragma omp parallel for schedule(dynamic)
 	for (size_t i = 0; i < samples; ++i)

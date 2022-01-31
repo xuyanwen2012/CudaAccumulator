@@ -49,22 +49,27 @@ void run_bh_cuda(const body_container& bodies,
 	std::cout << "BH: Done! " << std::endl;
 }
 
+body_container init_bodies(int n)
+{
+	body_container bodies;
+	bodies.reserve(n);
+
+	for (int i = 0; i < n; ++i)
+	{
+		bodies.push_back(std::make_unique<body<float>>(my_rand(), my_rand(), my_rand() * 1.5f));
+	}
+
+	return bodies;
+}
+
 int main()
 {
 	constexpr int num_bodies = 1024;
 	assert(num_bodies >= 1024);
 
-	// Inputs
-	body_container bodies;
-	bodies.reserve(num_bodies);
+	const body_container bodies = init_bodies(num_bodies);
 
-	for (int i = 0; i < num_bodies; ++i)
-	{
-		bodies.push_back(std::make_unique<body<float>>(my_rand(), my_rand(), my_rand() * 1.5f));
-	}
-
-	// Outputs
-	const auto us = static_cast<pair_f*>(calloc(num_bodies, sizeof(pair_f)));
+	const auto us = make_output_array<pair_f>(num_bodies);
 
 	// Run
 	run_bh_cuda(bodies, us, 0.0f);
