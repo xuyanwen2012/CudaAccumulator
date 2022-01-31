@@ -9,8 +9,8 @@
 #include "bh_tree.h"
 #include "body.h"
 
-void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
-                 std::pair<float, float>* us,
+void run_bh_cuda(const body_container& bodies,
+                 pair_f* us,
                  const float theta = 1.0f)
 {
 	std::cout << "BH: Building the quadtree." << std::endl;
@@ -32,7 +32,7 @@ void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
 	{
 		const auto pos = bodies[i]->pos();
 
-		std::pair<float, float> result{};
+		pair_f result{};
 		accumulator_set_constants_and_result_address(pos.real(), pos.imag(), &result.first, acc);
 
 		qt.compute_force_accumulator(acc, theta);
@@ -51,11 +51,11 @@ void run_bh_cuda(const std::vector<std::shared_ptr<body<float>>>& bodies,
 
 int main()
 {
-	constexpr int num_bodies = 1024 * 10;
+	constexpr int num_bodies = 1024;
 	assert(num_bodies >= 1024);
 
 	// Inputs
-	std::vector<std::shared_ptr<body<float>>> bodies;
+	body_container bodies;
 	bodies.reserve(num_bodies);
 
 	for (int i = 0; i < num_bodies; ++i)
@@ -64,18 +64,15 @@ int main()
 	}
 
 	// Outputs
-	const auto us = static_cast<std::pair<float, float>*>(calloc(num_bodies, sizeof(std::pair<float, float>)));
+	const auto us = static_cast<pair_f*>(calloc(num_bodies, sizeof(pair_f)));
 
 	// Run
-	run_bh_cuda(bodies, us, 0.75f);
+	run_bh_cuda(bodies, us, 0.0f);
 
 	// Print result, some sneaky peek + RMSE 
-	if (us != nullptr)
+	for (int i = 0; i < 10; ++i)
 	{
-		for (int i = 0; i < 10; ++i)
-		{
-			std::cout << '(' << us[i].first << ", " << us[i].second << ')' << std::endl;
-		}
+		std::cout << '(' << us[i].first << ", " << us[i].second << ')' << std::endl;
 	}
 
 	std::cout << "RMSE: " << compute_rmse(bodies, us, 1024) << std::endl;

@@ -1,6 +1,8 @@
 #include "util.h"
 
+#include <cassert>
 #include <iostream>
+#include <numeric>
 #include <omp.h>
 
 #ifdef _WIN32
@@ -35,18 +37,19 @@ std::pair<T, T> cpu_kernel_func_debug(T x0, T y0, T mass, T x1, T y1)
 	const float dist_sqr = dx * dx + dy * dy + 1e-9f;
 	const float inv_dist = 1.0f / sqrtf(dist_sqr);
 	const float inv_dist3 = inv_dist * inv_dist * inv_dist;
-	const float with_mass = inv_dist3 * mass; // z is the mass in this case
+	const float with_mass = inv_dist3 * mass; 
 
 	return {dx * with_mass, dy * with_mass};
 }
 
-float compute_rmse(const std::vector<std::shared_ptr<body<float>>>& bodies,
-                   const std::pair<float, float>* us,
+float compute_rmse(const body_container& bodies,
+                   const pair_f* us,
                    const size_t samples = 100)
 {
-	float rmse{};
+	assert(samples >= 10);
 
-	const auto ground_truth = static_cast<std::pair<float, float>*>(calloc(samples, sizeof(std::pair<float, float>)));
+	constexpr auto bytes_2_f = sizeof(pair_f);
+	const auto ground_truth = static_cast<pair_f*>(calloc(samples, bytes_2_f));
 
 #pragma omp parallel for schedule(dynamic)
 	for (size_t i = 0; i < samples; ++i)
@@ -64,21 +67,26 @@ float compute_rmse(const std::vector<std::shared_ptr<body<float>>>& bodies,
 		}
 	}
 
-	constexpr unsigned n_to_print = 10;
 	std::cout << "==================" << std::endl;
+	constexpr unsigned n_to_print = 10;
 	for (unsigned i = 0; i < n_to_print; ++i)
 	{
 		std::cout << '('
 			<< ground_truth[i].first << ", "
-			<< ground_truth[i].second << ')' << std::endl;
+			<< ground_truth[i].second << ')'
+			<< std::endl;
 	}
 
+	float rmse{};
 #pragma omp parallel for reduction(+:sum)
 	for (size_t i = 0; i < samples; ++i)
 	{
-		rmse += powf(ground_truth[i].first - us[i].first, 2);
-		rmse += powf(ground_truth[i].second - us[i].second, 2);
+		const auto dx = ground_truth[i].first - us[i].first;
+		const auto dy = ground_truth[i].second - us[i].second;
+
+		rmse += powf(dx, 2);
+		rmse += powf(dy, 2);
 	}
 
-	return sqrtf(rmse / static_cast<float>(samples));
+	return sqrtf(rmse / static_cast<float>(samples * 2));
 }
