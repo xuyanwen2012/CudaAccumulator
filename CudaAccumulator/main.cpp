@@ -65,7 +65,7 @@ body_container init_bodies(const int n)
 }
 
 
-int main(int argc, char* argv[])
+int main(const int argc, char* argv[])
 {
 	cxxopts::Options options("N-body Tree Code", "Heterogeneous Computing N-body Problem Solver");
 	options.add_options()
@@ -99,7 +99,8 @@ int main(int argc, char* argv[])
 
 	run_bh_cuda(bodies, us, theta);
 
-	std::cout << "RMSE: " << compute_rmse(bodies, us, 1024) << std::endl;
+	const auto rmse = compute_rmse(bodies, us, 1024);
+	std::cout << "RMSE: " << rmse << std::endl;
 
 	return EXIT_SUCCESS;
 }

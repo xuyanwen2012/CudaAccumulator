@@ -7,7 +7,8 @@ cpu:
 
 gpu:
 	nvcc -c -O3 accumulator.cu
-	nvcc -o a.out util.cpp bh_tree.cpp main.cpp accumulator.o
+	gcc -c -O3 util.cpp -fopenmp
+	nvcc -o a.out bh_tree.cpp main.cpp util.o accumulator.o
 
 clean:
 	rm *.o *.out
