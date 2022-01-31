@@ -4,11 +4,7 @@
 extern "C" {
 #endif
 
-#ifdef __cplusplus
-using accumulator_handle = struct accumulator_handle;
-#else
 typedef struct accumulator_handle accumulator_handle;
-#endif
 
 accumulator_handle* get_accumulator(void);
 

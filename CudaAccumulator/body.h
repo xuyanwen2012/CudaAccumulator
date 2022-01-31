@@ -15,5 +15,7 @@ struct body
 	T y;
 	T mass;
 
+	// Only needed for the current BH tree implementation,
+	// in future it will be replaced
 	std::complex<T> pos() { return std::complex<T>(x, y); }
 };
