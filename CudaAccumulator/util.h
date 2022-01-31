@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <memory>
 #include "body.h"
 
 using pair_f = std::pair<float, float>;
