@@ -12,7 +12,6 @@
     <ClInclude Include="accumulator.h" />
     <ClInclude Include="bh_tree.h" />
     <ClInclude Include="body.h" />
-    <ClInclude Include="cu_nbody.cuh" />
     <ClInclude Include="util.h" />
     <ClInclude Include="cxxopts\cxxopts.hpp">
       <Filter>cxxopts</Filter>
