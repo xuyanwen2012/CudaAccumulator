@@ -4,7 +4,7 @@
 extern "C" {
 #endif
 
-typedef struct accumulator_handle accumulator_handle;
+using accumulator_handle = struct accumulator_handle;
 
 accumulator_handle* get_accumulator(void);
 
