@@ -10,6 +10,10 @@
 
 constexpr unsigned max_num_bodies_per_compute = 1024;
 
+int running_count;
+long long avg_reduction_size;
+int num_reductions;
+
 static void handle_error(const cudaError_t err,
                          const char* file,
                          const int line)
@@ -211,6 +215,10 @@ int check_and_clear_current_buffer(const accumulator_handle* acc)
 
 int accumulator_set_constants_and_result_address(const float x, const float y, float* addr, accumulator_handle* acc)
 {
+	avg_reduction_size += running_count;
+	running_count = 0;
+	++num_reductions;
+
 	acc->x = x;
 	acc->y = y;
 	acc->result_addr = addr;
@@ -227,6 +235,10 @@ int release_accumulator(accumulator_handle* acc)
 
 	free(acc);
 
+	avg_reduction_size += running_count;
+	avg_reduction_size /= num_reductions;
+	printf("avg_reduction_elements: %lld\n", avg_reduction_size);
+
 	HANDLE_ERROR(cudaDeviceReset());
 	return 0;
 }
@@ -234,6 +246,8 @@ int release_accumulator(accumulator_handle* acc)
 
 int accumulator_accumulate(const float x, const float y, const float mass, accumulator_handle* acc)
 {
+	++running_count;
+
 	// Push this to the buffer 
 	acc->uni_bodies[acc->body_count] = make_float3(x, y, mass);
 	++acc->body_count;

@@ -82,9 +82,9 @@ int release_accumulator(accumulator_handle* acc)
 
 	long long tmp = avg_reduction_size;
 
-	printf("Stats:\n");
+	// printf("Stats:\n");
 	printf("avg_reduction_elements: %lld\n", avg_reduction_size);
-	printf("avg_reduction_size (elements * size of float * 3): %lld\n", avg_reduction_size * sizeof(float) * 3);
+	// printf("avg_reduction_size (elements * size of float * 3): %lld\n", avg_reduction_size * sizeof(float) * 3);
 
 	free(acc);
 	return 1;
