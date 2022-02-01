@@ -13,9 +13,13 @@
 
 void run_bh_cuda(const body_container& bodies,
                  pair_f* us,
-                 const float theta = 1.0f)
+                 const float theta = 1.0f,
+                 const bool verbose = false)
 {
-	std::cout << "BH: Building the quadtree." << std::endl;
+	if (verbose)
+	{
+		std::cout << "BH: Building the quadtree." << std::endl;
+	}
 
 	auto qt = barnes_hut::quadtree();
 	for (const auto& body : bodies)
@@ -24,7 +28,10 @@ void run_bh_cuda(const body_container& bodies,
 	}
 	qt.compute_center_of_mass();
 
-	std::cout << "BH: Start Traversing the tree..." << std::endl;
+	if (verbose)
+	{
+		std::cout << "BH: Start Traversing the tree..." << std::endl;
+	}
 	const auto start = std::chrono::steady_clock::now();
 
 	accumulator_handle* acc = get_accumulator();
@@ -47,8 +54,11 @@ void run_bh_cuda(const body_container& bodies,
 
 	const auto end = std::chrono::steady_clock::now();
 	const std::chrono::duration<double> elapsed_seconds = end - start;
-	std::cout << "- elapsed time: " << elapsed_seconds.count() << 's' << std::endl;
-	std::cout << "BH: Done! " << std::endl;
+	std::cout << "Traverse Time: " << elapsed_seconds.count() << 's' << std::endl;
+	if (verbose)
+	{
+		std::cout << "BH: Done! " << std::endl;
+	}
 }
 
 body_container init_bodies(const int n)
@@ -58,7 +68,7 @@ body_container init_bodies(const int n)
 
 	for (int i = 0; i < n; ++i)
 	{
-		bodies.push_back(std::make_unique<body<float>>(my_rand(), my_rand(), my_rand() * 1.5f));
+		bodies.push_back(std::make_unique<body<float>>(my_rand(), my_rand(), 1.0f));
 	}
 
 	return bodies;
@@ -103,7 +113,7 @@ int main(const int argc, char* argv[])
 	const body_container bodies = init_bodies(num_bodies);
 	const auto us = make_output_array<pair_f>(num_bodies);
 
-	run_bh_cuda(bodies, us, theta);
+	run_bh_cuda(bodies, us, theta, verbose);
 
 	const auto rmse = compute_rmse(bodies, us, 1024, verbose);
 	std::cout << "RMSE: " << rmse << std::endl;
