@@ -172,9 +172,9 @@ int check_and_clear_current_buffer(const accumulator_handle* acc)
 
 		while (remaining_n >= 32)
 		{
-			const auto previous_pow_of_2 = get_previous_pow_of_2(remaining_n);
+			const auto num_to_ship = get_previous_pow_of_2(remaining_n);
 
-			const auto result = compute_with_cuda(acc, current_index, previous_pow_of_2);
+			const auto result = compute_with_cuda(acc, current_index, num_to_ship);
 			rem_force.x += result.x;
 			rem_force.y += result.y;
 
@@ -182,10 +182,10 @@ int check_and_clear_current_buffer(const accumulator_handle* acc)
 			//printf("shipment %d: %d\n", count, previous_pow_of_2);
 			//++count;
 
-			remaining_n -= previous_pow_of_2;
+			remaining_n -= num_to_ship;
 
 			// drop the first 'previous_pow_of_2' particles
-			current_index += previous_pow_of_2;
+			current_index += num_to_ship;
 		}
 
 		// Do the rest on CPU ( < 32)
@@ -224,6 +224,8 @@ int release_accumulator(accumulator_handle* acc)
 {
 	cudaFree(acc->uni_bodies);
 	cudaFree(acc->uni_results);
+
+	free(acc);
 
 	HANDLE_ERROR(cudaDeviceReset());
 	return 0;
