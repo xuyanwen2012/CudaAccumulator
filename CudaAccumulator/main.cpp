@@ -74,8 +74,9 @@ int main(const int argc, char* argv[])
 		("t,theta", "Theta value for BH tree", cxxopts::value<float>())
 		("v,verbose", "Verbose output", cxxopts::value<bool>()->default_value("false"));
 
-	int num_bodies = 1024 * 10;
+	int num_bodies = 1024;
 	float theta = 0.75f;
+	bool verbose = false;
 
 	const auto result = options.parse(argc, argv);
 	if (result.count("num"))
@@ -86,6 +87,11 @@ int main(const int argc, char* argv[])
 	if (result.count("theta"))
 	{
 		theta = result["theta"].as<float>();
+	}
+
+	if (result.count("verbose"))
+	{
+		verbose = true;
 	}
 
 	assert(num_bodies >= 1024);
@@ -99,7 +105,7 @@ int main(const int argc, char* argv[])
 
 	run_bh_cuda(bodies, us, theta);
 
-	const auto rmse = compute_rmse(bodies, us, 1024);
+	const auto rmse = compute_rmse(bodies, us, 1024, verbose);
 	std::cout << "RMSE: " << rmse << std::endl;
 
 	return EXIT_SUCCESS;
