@@ -179,17 +179,26 @@ void quadtree::compute_center_of_mass()
 				              // child is tree_node
 				              for (const tree_node* grand_child : child->children)
 				              {
-					              if (grand_child->is_leaf_ && grand_child->content != nullptr)
+					              if (grand_child->is_leaf_)
 					              {
-						              // grand_child is leaf_node
-						              node->payloads.push_back(grand_child->content->x);
-						              node->payloads.push_back(grand_child->content->y);
-						              node->payloads.push_back(grand_child->content->mass);
+						              if (grand_child->content != nullptr)
+						              {
+							              // grand_child is leaf_node
+							              node->payloads.push_back(grand_child->content->x);
+							              node->payloads.push_back(grand_child->content->y);
+							              node->payloads.push_back(grand_child->content->mass);
+						              }
 					              }
 					              else
 					              {
 						              // grand_child is tree_node
 						              const auto cm = grand_child->center_of_mass();
+
+						              if (isnan(cm.imag()))
+						              {
+							              continue;
+						              }
+
 						              node->payloads.push_back(cm.real());
 						              node->payloads.push_back(cm.imag());
 						              node->payloads.push_back(grand_child->node_mass);
@@ -211,6 +220,8 @@ void inner_dfs_accumulate(const tree_node* current, accumulator_handle* acc, con
 			return;
 		}
 
+		// On leaf nodes we reach the base case and we want to do the direct
+		// particle-to-particle computation.
 		accumulator_accumulate(current->content->x,
 		                       current->content->y,
 		                       current->content->mass,
@@ -219,33 +230,37 @@ void inner_dfs_accumulate(const tree_node* current, accumulator_handle* acc, con
 	else
 	{
 		const auto theta_val = quadtree::compute_theta(current, pos);
+		const auto theta_val_2 = theta_val - theta;
 
 		if (theta_val < theta)
 		{
-			if (theta_val > 0.5f * theta)
+			// On non-leaf nodes if the current node is under a distance
+			// threshold (theta) then we approximate this node with a
+			// particle-to-node computation.
+
+			const auto cm = current->center_of_mass();
+			accumulator_accumulate(cm.real(),
+				cm.imag(),
+				current->node_mass,
+				acc);
+		}
+		else if (theta_val_2 > 0.0f && theta_val_2 < 0.1f * theta)
+		{
+			// Two level-over approximate
+			const auto num = current->payloads.size();
+			for (size_t i = 0; i < num; i += 3)
 			{
-				const auto num = current->payloads.size();
-				for (size_t i = 0; i < num; i += 3)
-				{
-					const auto x = current->payloads[i];
-					const auto y = current->payloads[i + 1];
-					const auto mass = current->payloads[i + 2];
-					accumulator_accumulate(x, y, mass, acc);
-				}
-			}
-			else
-			{
-				// normal approximate 
-				const auto cm = current->center_of_mass();
-				accumulator_accumulate(cm.real(),
-				                       cm.imag(),
-				                       current->node_mass,
-				                       acc);
+				const auto x = current->payloads[i];
+				const auto y = current->payloads[i + 1];
+				const auto mass = current->payloads[i + 2];
+
+				accumulator_accumulate(x, y, mass, acc);
 			}
 		}
 		else
 		{
-			// dont approximate
+			// On non-leaf nodes and if the current node's distance is greater
+			// than the threshold we want to recursively visit its children. 
 			for (const tree_node* child : current->children)
 			{
 				inner_dfs_accumulate(child, acc, theta);
