@@ -82,6 +82,9 @@ void run_kd_nn(const bool verbose = false)
 	{
 		std::cout << "KD: Start Traversing the tree..." << std::endl;
 	}
+
+	std::cout << "min on x-axis is: " << tree->find_min(0) << std::endl;
+	std::cout << "min on y-axis is: " << tree->find_min(1) << std::endl;
 }
 
 body_container init_bodies(const int n)

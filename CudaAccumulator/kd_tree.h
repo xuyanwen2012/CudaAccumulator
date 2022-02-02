@@ -21,8 +21,8 @@ public:
 
 	void insert_point(const point_t& point);
 
-private:
-	static node* inner_insert_point(node* current, const point_t& point, unsigned depth);
+	float find_min(unsigned dim) const;
 
+private:
 	node* root_;
 };
