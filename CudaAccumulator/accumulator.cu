@@ -176,7 +176,7 @@ int check_and_clear_current_buffer(const accumulator_handle* acc)
 
 		while (remaining_n >= 32)
 		{
-			const auto num_to_ship = get_previous_pow_of_2(remaining_n);
+			const auto num_to_ship = get_previous_pow_of_2(remaining_n); //(remaining_n/32)*32;
 
 			const auto result = compute_with_cuda(acc, current_index, num_to_ship);
 			rem_force.x += result.x;
