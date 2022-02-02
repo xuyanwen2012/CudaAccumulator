@@ -81,6 +81,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="bh_tree.cpp" />
+    <ClCompile Include="kd_tree.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="util.cpp" />
     <Text Include="Makefile">
@@ -92,6 +93,7 @@
     <ClInclude Include="bh_tree.h" />
     <ClInclude Include="body.h" />
     <ClInclude Include="cxxopts\cxxopts.hpp" />
+    <ClInclude Include="kd_tree.h" />
     <ClInclude Include="util.h" />
   </ItemGroup>
   <ItemGroup>

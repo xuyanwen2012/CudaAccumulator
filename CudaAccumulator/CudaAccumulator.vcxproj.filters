@@ -4,17 +4,27 @@
     <CudaCompile Include="accumulator.cu" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="bh_tree.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="util.cpp" />
+    <ClCompile Include="bh_tree.cpp">
+      <Filter>forest</Filter>
+    </ClCompile>
+    <ClCompile Include="kd_tree.cpp">
+      <Filter>forest</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="accumulator.h" />
-    <ClInclude Include="bh_tree.h" />
     <ClInclude Include="body.h" />
     <ClInclude Include="util.h" />
     <ClInclude Include="cxxopts\cxxopts.hpp">
       <Filter>cxxopts</Filter>
+    </ClInclude>
+    <ClInclude Include="bh_tree.h">
+      <Filter>forest</Filter>
+    </ClInclude>
+    <ClInclude Include="kd_tree.h">
+      <Filter>forest</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
@@ -26,6 +36,9 @@
   <ItemGroup>
     <Filter Include="cxxopts">
       <UniqueIdentifier>{a001a230-8680-43ae-baa2-093ebf9b22fe}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="forest">
+      <UniqueIdentifier>{2056f5ad-b2f8-4399-9f21-7ef9955a3655}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
 </Project>
