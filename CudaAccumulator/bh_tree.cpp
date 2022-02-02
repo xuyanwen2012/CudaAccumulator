@@ -222,7 +222,7 @@ void inner_dfs_accumulate(const tree_node* current, accumulator_handle* acc, con
 
 		if (theta_val < theta)
 		{
-			if (theta_val > theta)
+			if (theta_val > 0.5f * theta)
 			{
 				const auto num = current->payloads.size();
 				for (size_t i = 0; i < num; i += 3)
