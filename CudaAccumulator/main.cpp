@@ -10,6 +10,7 @@
 #include "accumulator.h"
 #include "bh_tree.h"
 #include "body.h"
+#include "kd_tree.h"
 
 void run_bh_cuda(const body_container& bodies,
                  pair_f* us,
@@ -61,6 +62,28 @@ void run_bh_cuda(const body_container& bodies,
 	}
 }
 
+void run_kd_nn(const bool verbose = false)
+{
+	int num_points = 1024;
+
+	const auto tree = new kd_tree();
+
+	if (verbose)
+	{
+		std::cout << "KD: Building the KD Tree..." << std::endl;
+	}
+
+	for (int i = 0; i < num_points; ++i)
+	{
+		tree->insert_point({my_rand(), my_rand()});
+	}
+
+	if (verbose)
+	{
+		std::cout << "KD: Start Traversing the tree..." << std::endl;
+	}
+}
+
 body_container init_bodies(const int n)
 {
 	body_container bodies;
@@ -107,16 +130,19 @@ int main(const int argc, char* argv[])
 	assert(num_bodies >= 1024);
 	assert(theta >= 0.0f && theta <= 2.0f);
 
-	std::cout << "Started random problem with " << num_bodies << " particles." << std::endl;
-	std::cout << "Theta value is " << theta << '.' << std::endl;
+	//std::cout << "Started random problem with " << num_bodies << " particles." << std::endl;
+	//std::cout << "Theta value is " << theta << '.' << std::endl;
 
-	const body_container bodies = init_bodies(num_bodies);
-	const auto us = make_output_array<pair_f>(num_bodies);
+	//const body_container bodies = init_bodies(num_bodies);
+	//const auto us = make_output_array<pair_f>(num_bodies);
 
-	run_bh_cuda(bodies, us, theta, verbose);
+	//run_bh_cuda(bodies, us, theta, verbose);
 
-	const auto rmse = compute_rmse(bodies, us, 1024, verbose);
-	std::cout << "RMSE: " << rmse << std::endl;
+	//const auto rmse = compute_rmse(bodies, us, 1024, verbose);
+	//std::cout << "RMSE: " << rmse << std::endl;
+
+
+	run_kd_nn(true);
 
 	return EXIT_SUCCESS;
 }

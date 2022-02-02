@@ -19,7 +19,7 @@ class kd_tree
 public:
 	kd_tree();
 
-	node* insert_point(const point_t& point);
+	void insert_point(const point_t& point);
 
 private:
 	static node* inner_insert_point(node* current, const point_t& point, unsigned depth);

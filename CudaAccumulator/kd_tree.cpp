@@ -8,9 +8,9 @@ kd_tree::kd_tree() : root_()
 {
 }
 
-node* kd_tree::insert_point(const point_t& point)
+void kd_tree::insert_point(const point_t& point)
 {
-	return inner_insert_point(root_, point, 0);
+	root_ = inner_insert_point(root_, point, 0);
 }
 
 node* kd_tree::inner_insert_point(node* current, const point_t& point, const unsigned depth)
