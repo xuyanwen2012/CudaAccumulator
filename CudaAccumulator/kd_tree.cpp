@@ -2,6 +2,8 @@
 
 #include <algorithm>
 
+#include "bh_tree.h"
+
 node::node(const float x, const float y) : point{x, y}, left(), right()
 {
 }
@@ -53,7 +55,7 @@ float inner_find_min(const node* current, const unsigned dim, const unsigned dep
 
 	// minimum could be in either subtree
 	float val_left = std::numeric_limits<float>::max();
-	float val_right = std::numeric_limits<float>::max();;
+	float val_right = std::numeric_limits<float>::max();
 	if (current->left != nullptr)
 	{
 		val_left = inner_find_min(current->left, dim, depth + 1);
@@ -69,4 +71,20 @@ float inner_find_min(const node* current, const unsigned dim, const unsigned dep
 float kd_tree::find_min(const unsigned dim) const
 {
 	return inner_find_min(root_, dim, 0);
+}
+
+float distance(const point_t& q, const point_t& p)
+{
+	const std::complex<float> distance (q[0] - p[0], q[1] - p[1]);
+	return abs(distance);
+}
+
+point_t inner_nearest_neighbor(node* current, const point_t& p, const unsigned depth, barnes_hut::rect<float> rect)
+{
+	// if this bounding box is too far, do nothing
+}
+
+point_t kd_tree::find_nearest_neighbor(const point_t& point)
+{
+	return inner_nearest_neighbor(root_, point, 0, {0.5f, 0.5f, 1.0f, 1.0f});
 }
