@@ -162,21 +162,25 @@ void quadtree::compute_center_of_mass()
 		              // has children.
 		              for (const tree_node* child : node->children)
 		              {
-			              if (child->is_leaf_ && child->content != nullptr)
+			              if (child->is_leaf_)
 			              {
-				              // child is leaf_node
-				              node->payloads.push_back(child->content->x);
-				              node->payloads.push_back(child->content->y);
-				              node->payloads.push_back(child->content->mass);
+				              if (child->content != nullptr)
+				              {
+					              // child is leaf_node
+					              node->payloads.push_back(child->content->x);
+					              node->payloads.push_back(child->content->y);
+					              node->payloads.push_back(child->content->mass);
+				              }
 			              }
 			              else
 			              {
-				              if (child->is_leaf_)
-				              {
-					              return;
-				              }
-
 				              // child is tree_node
+				              /*			              const auto cm = child->center_of_mass();
+							                            node->payloads.push_back(cm.real());
+							                            node->payloads.push_back(cm.imag());
+							                            node->payloads.push_back(child->node_mass);*/
+
+				              //
 				              for (const tree_node* grand_child : child->children)
 				              {
 					              if (grand_child->is_leaf_)
@@ -193,12 +197,6 @@ void quadtree::compute_center_of_mass()
 					              {
 						              // grand_child is tree_node
 						              const auto cm = grand_child->center_of_mass();
-
-						              if (isnan(cm.imag()))
-						              {
-							              continue;
-						              }
-
 						              node->payloads.push_back(cm.real());
 						              node->payloads.push_back(cm.imag());
 						              node->payloads.push_back(grand_child->node_mass);
@@ -230,7 +228,6 @@ void inner_dfs_accumulate(const tree_node* current, accumulator_handle* acc, con
 	else
 	{
 		const auto theta_val = quadtree::compute_theta(current, pos);
-		const auto theta_val_2 = theta_val - theta;
 
 		if (theta_val < theta)
 		{
@@ -240,11 +237,11 @@ void inner_dfs_accumulate(const tree_node* current, accumulator_handle* acc, con
 
 			const auto cm = current->center_of_mass();
 			accumulator_accumulate(cm.real(),
-				cm.imag(),
-				current->node_mass,
-				acc);
+			                       cm.imag(),
+			                       current->node_mass,
+			                       acc);
 		}
-		else if (theta_val_2 > 0.0f && theta_val_2 < 0.1f * theta)
+		else if (theta_val < 1.6f * theta)
 		{
 			// Two level-over approximate
 			const auto num = current->payloads.size();
