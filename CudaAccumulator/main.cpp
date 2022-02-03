@@ -36,8 +36,8 @@ void run_bh_cuda(const body_container& bodies,
 
 	accumulator_handle* acc = get_accumulator();
 
-	const size_t num_bodies = bodies.size();
-	for (size_t i = 0; i < num_bodies; ++i)
+	const size_t num_to_compute = 1024 * 10;
+	for (size_t i = 0; i < num_to_compute; ++i)
 	{
 		const auto pos = bodies[i]->pos();
 
@@ -84,7 +84,7 @@ int main(const int argc, char* argv[])
 		("t,theta", "Theta value for BH tree", cxxopts::value<float>())
 		("v,verbose", "Verbose output", cxxopts::value<bool>()->default_value("false"));
 
-	int num_bodies = 1024 * 10;
+	int num_bodies = 1024 * 1024;
 	float theta = 0.75f;
 	bool verbose = true;
 

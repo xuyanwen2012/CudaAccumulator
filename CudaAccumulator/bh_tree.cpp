@@ -241,7 +241,7 @@ void inner_dfs_accumulate(const tree_node* current, accumulator_handle* acc, con
 			                       current->node_mass,
 			                       acc);
 		}
-		else if (theta_val < 1.6f * theta)
+		else if (theta_val < 1.7f * theta)
 		{
 			// Two level-over approximate
 			const auto num = current->payloads.size();
