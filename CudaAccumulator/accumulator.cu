@@ -126,7 +126,8 @@ __global__ void force_reduction_2(const float3 source_body, const float3* bodies
 
 	if (tid == 0)
 	{
-		result[blockIdx.x] = partial_sum[0];
+		result[blockIdx.x].x += partial_sum[0].x;
+		result[blockIdx.x].y += partial_sum[0].y;
 	}
 }
 
@@ -178,9 +179,13 @@ int check_and_clear_current_buffer(const accumulator_handle* acc)
 		{
 			const auto num_to_ship = get_previous_pow_of_2(remaining_n); //(remaining_n/32)*32;
 
-			const auto result = compute_with_cuda(acc, current_index, num_to_ship);
-			rem_force.x += result.x;
-			rem_force.y += result.y;
+			const unsigned block_size = num_to_ship;
+			constexpr unsigned grid_size = 1;
+			const auto source_body = make_float3(acc->x, acc->y, 1.0f);
+
+			force_reduction_2<<<grid_size, block_size>>>(
+				source_body, acc->uni_bodies + current_index,
+				acc->uni_results, num_to_ship);
 
 			//static int count = 0;
 			//printf("shipment %d: %d\n", count, previous_pow_of_2);
@@ -191,6 +196,12 @@ int check_and_clear_current_buffer(const accumulator_handle* acc)
 			// drop the first 'previous_pow_of_2' particles
 			current_index += num_to_ship;
 		}
+
+		cudaDeviceSynchronize();
+
+		rem_force.x = acc->uni_results[0].x;
+		rem_force.y = acc->uni_results[0].y;
+
 
 		// Do the rest on CPU ( < 32)
 		for (unsigned j = current_index; j < current_index + remaining_n; ++j)
@@ -254,12 +265,20 @@ int accumulator_accumulate(const float x, const float y, const float mass, accum
 
 	if (acc->body_count >= max_num_bodies_per_compute)
 	{
-		const auto result = compute_with_cuda(acc, 0, max_num_bodies_per_compute);
+		const unsigned block_size = max_num_bodies_per_compute;
+		constexpr unsigned grid_size = 1;
+		const auto source_body = make_float3(acc->x, acc->y, 1.0f);
+
+		force_reduction_2<<<grid_size, block_size>>>(
+			source_body, acc->uni_bodies, acc->uni_results, max_num_bodies_per_compute);
+
+		cudaDeviceSynchronize();
+
 
 		// Storing the result back 
 		float* tmp = acc->result_addr;
-		tmp[0] += result.x;
-		tmp[1] += result.y;
+		tmp[0] += acc->uni_results[0].x;
+		tmp[1] += acc->uni_results[0].y;
 
 		acc->body_count = 0;
 	}

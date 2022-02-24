@@ -87,6 +87,9 @@ float compute_rmse(const body_container& bodies,
 				<< ground_truth[i].second << ')'
 				<< std::endl;
 		}
+
+
+
 	}
 
 	// Compute the RMSE
