@@ -157,11 +157,10 @@ int check_and_clear_current_buffer(const accumulator_handle* acc)
 	{
 		float2 rem_force = {};
 
-		const auto num_to_ship = acc->body_count;
 		const auto source_body = make_float3(acc->x, acc->y, 1.0f);
+		const auto num_to_ship = acc->body_count;
 
 		const auto prev_mult_of_32 = num_to_ship / 32 * 32;
-		const auto rem_num = num_to_ship - prev_mult_of_32;
 
 		acc->uni_results[0].x = 0.0;
 		acc->uni_results[0].y = 0.0;
@@ -182,6 +181,7 @@ int check_and_clear_current_buffer(const accumulator_handle* acc)
 		rem_force.x = acc->uni_results[0].x;
 		rem_force.y = acc->uni_results[0].y;
 
+		const auto rem_num = num_to_ship - prev_mult_of_32;
 		for (size_t i = 0; i < rem_num; ++i)
 		{
 			const auto dx = acc->x - acc->uni_bodies[prev_mult_of_32 + i].x;
