@@ -160,11 +160,6 @@ int check_and_clear_current_buffer(const accumulator_handle* acc)
 		const auto num_to_ship = acc->body_count;
 		const auto source_body = make_float3(acc->x, acc->y, 1.0f);
 
-		//auto result = static_cast<float2*>(malloc(sizeof(float2)));
-
-		constexpr unsigned block_size = kMaxNumPerBlock;
-		constexpr unsigned grid_size = 1;
-
 		const auto prev_mult_of_32 = num_to_ship / 32 * 32;
 		const auto rem_num = num_to_ship - prev_mult_of_32;
 
@@ -175,6 +170,8 @@ int check_and_clear_current_buffer(const accumulator_handle* acc)
 
 		for (size_t i = 0; i < n_iters; ++i)
 		{
+			constexpr unsigned block_size = kMaxNumPerBlock;
+			constexpr unsigned grid_size = 1;
 			ReduceForcesGpu<<<grid_size, block_size>>>(
 				source_body, acc->uni_bodies + i * kMaxNumPerBlock, acc->uni_results,
 				kMaxNumPerBlock);
@@ -243,26 +240,6 @@ int accumulator_accumulate(const float x, const float y, const float mass, accum
 	// Push this to the buffer 
 	acc->uni_bodies[acc->body_count] = make_float3(x, y, mass);
 	++acc->body_count;
-
-	//if (acc->body_count >= max_num_bodies_per_compute)
-	//{
-	//	const unsigned block_size = max_num_bodies_per_compute;
-	//	constexpr unsigned grid_size = 1;
-	//	const auto source_body = make_float3(acc->x, acc->y, 1.0f);
-
-	//	force_reduction_2<<<grid_size, block_size>>>(
-	//		source_body, acc->uni_bodies, acc->uni_results, max_num_bodies_per_compute);
-
-	//	cudaDeviceSynchronize();
-
-
-	//	// Storing the result back 
-	//	float* tmp = acc->result_addr;
-	//	tmp[0] += acc->uni_results[0].x;
-	//	tmp[1] += acc->uni_results[0].y;
-
-	//	acc->body_count = 0;
-	//}
 
 	return 0;
 }
