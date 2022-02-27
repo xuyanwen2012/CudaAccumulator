@@ -40,7 +40,7 @@ using accumulator_handle = struct accumulator_handle
 	// CUDA Related
 	unsigned int body_count;
 	float3* uni_bodies;
-	float2* uni_results;
+	float2* uni_results; // only one of this
 };
 
 
@@ -61,14 +61,14 @@ uint32_t flp2(uint32_t x)
 }
 
 
-unsigned get_previous_pow_of_2(unsigned n)
+int get_previous_pow_of_2(unsigned n)
 {
 	static std::map<unsigned, unsigned> lookup_table{};
 
 	const auto val = lookup_table.find(n);
 	if (val == lookup_table.end())
 	{
-		const unsigned v = flp2(n);
+		const int v = flp2(n);
 		lookup_table.insert(std::make_pair(n, v));
 		return v;
 	}
@@ -82,13 +82,12 @@ float2 kernel_func_cpu(const float dx, const float dy, const float mass)
 	const float dist_sqr = dx * dx + dy * dy + 1e-9f;
 	const float inv_dist = 1.0f / sqrtf(dist_sqr);
 	const float inv_dist3 = inv_dist * inv_dist * inv_dist;
-	const float with_mass = inv_dist3 * mass; // z is the mass in this case
-
-	return make_float2(dx * with_mass, dy * with_mass);
+	//const float with_mass = inv_dist3 * mass; // z is the mass in this case
+	return make_float2(dx * inv_dist3, dy * inv_dist3);
 }
 
 
-constexpr int kMaxNumPerBlock = 256;
+constexpr int kMaxNumPerBlock = 32;
 
 inline __device__ float2 KernelFuncGpu(const float3 p, const float3 q)
 {
@@ -97,8 +96,8 @@ inline __device__ float2 KernelFuncGpu(const float3 p, const float3 q)
 	const auto dist_sqr = dx * dx + dy * dy + 1e-9f;
 	const auto inv_dist = rsqrtf(dist_sqr);
 	const auto inv_dist3 = inv_dist * inv_dist * inv_dist;
-	const auto with_mass = inv_dist * p.z; // z is mass
-	return make_float2(dx * with_mass, dy * with_mass);
+	//const auto with_mass = inv_dist * p.z; // z is mass
+	return make_float2(dx * inv_dist3, dy * inv_dist3);
 }
 
 __global__ void ReduceForcesGpu(const float3 source_point, const float3* data,
@@ -140,7 +139,7 @@ accumulator_handle* get_accumulator()
 	HANDLE_ERROR(cudaSetDevice(0));
 
 	constexpr unsigned bytes_f3 = max_num_bodies_per_compute * sizeof(float3);
-	constexpr unsigned bytes_f2 = max_num_bodies_per_compute * sizeof(float3);
+	constexpr unsigned bytes_f2 = sizeof(float2);
 
 	HANDLE_ERROR(cudaMallocManaged(reinterpret_cast<void**>(&acc->uni_bodies), bytes_f3));
 	HANDLE_ERROR(cudaMallocManaged(reinterpret_cast<void**>(&acc->uni_results), bytes_f2));
@@ -161,18 +160,24 @@ int check_and_clear_current_buffer(const accumulator_handle* acc)
 		const auto num_to_ship = acc->body_count;
 		const auto source_body = make_float3(acc->x, acc->y, 1.0f);
 
-		auto result = static_cast<float2*>(malloc(sizeof(float2)));
+		//auto result = static_cast<float2*>(malloc(sizeof(float2)));
 
 		constexpr unsigned block_size = kMaxNumPerBlock;
 		constexpr unsigned grid_size = 1;
 
-		const size_t n_iters = num_to_ship / kMaxNumPerBlock;
+		const auto prev_mult_of_32 = num_to_ship / 32 * 32;
+		const auto rem_num = num_to_ship - prev_mult_of_32;
+
+		acc->uni_results[0].x = 0.0;
+		acc->uni_results[0].y = 0.0;
+
+		const size_t n_iters = prev_mult_of_32 / kMaxNumPerBlock;
 
 		for (size_t i = 0; i < n_iters; ++i)
 		{
 			ReduceForcesGpu<<<grid_size, block_size>>>(
-				source_body, acc->uni_bodies + i * kMaxNumPerBlock,
-				result, kMaxNumPerBlock);
+				source_body, acc->uni_bodies + i * kMaxNumPerBlock, acc->uni_results,
+				kMaxNumPerBlock);
 		}
 
 		cudaDeviceSynchronize();
@@ -180,11 +185,11 @@ int check_and_clear_current_buffer(const accumulator_handle* acc)
 		rem_force.x = acc->uni_results[0].x;
 		rem_force.y = acc->uni_results[0].y;
 
-		for (size_t i = n_iters * kMaxNumPerBlock; i < num_to_ship; ++i)
+		for (size_t i = 0; i < rem_num; ++i)
 		{
-			const auto dx = acc->x - acc->uni_bodies[i].x;
-			const auto dy = acc->y - acc->uni_bodies[i].y;
-			const auto mass = acc->uni_bodies[i].z;
+			const auto dx = acc->x - acc->uni_bodies[prev_mult_of_32 + i].x;
+			const auto dy = acc->y - acc->uni_bodies[prev_mult_of_32 + i].y;
+			const auto mass = acc->uni_bodies[prev_mult_of_32 + i].z;
 
 			const auto rem_result = kernel_func_cpu(dx, dy, mass);
 			rem_force.x += rem_result.x;
