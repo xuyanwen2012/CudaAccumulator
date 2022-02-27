@@ -4,6 +4,7 @@
 #include <complex>
 #include <memory>
 #include <type_traits>
+#include <vector>
 
 #include "body.h"
 #include "accumulator.h"
@@ -84,8 +85,15 @@ namespace barnes_hut
 
 		bool is_leaf() const { return is_leaf_; }
 
+		std::vector<float> payloads;
+
 	private:
 		bool is_leaf_;
+
+		/**
+		 * \brief This is used to bypass tree traversal
+		 */
+
 		void insert_body(const body_ptr& body_ptr);
 		direction determine_quadrant(const vec2& pos) const;
 		void split();
@@ -120,7 +128,7 @@ namespace barnes_hut
 		static size_t num_nodes;
 		static size_t depth;
 
-		static inline bool check_theta(const tree_node* node, const vec2& pos, float theta);
+		static inline float compute_theta(const tree_node* node, const vec2& pos);
 
 	private:
 		tree_node root_;

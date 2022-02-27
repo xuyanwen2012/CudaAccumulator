@@ -40,54 +40,8 @@ using accumulator_handle = struct accumulator_handle
 	// CUDA Related
 	unsigned int body_count;
 	float3* uni_bodies;
-	float2* uni_results;
+	float2* uni_results; // only one of this
 };
-
-
-/**
- * \brief find the previous power of 2 of this number
- * https://stackoverflow.com/questions/2679815/previous-power-of-2
- * \param x the number to round down
- * \return the previous power of 2
- */
-uint32_t flp2(uint32_t x)
-{
-	x = x | x >> 1;
-	x = x | x >> 2;
-	x = x | x >> 4;
-	x = x | x >> 8;
-	x = x | x >> 16;
-	return x - (x >> 1);
-}
-
-
-unsigned get_previous_pow_of_2(unsigned n)
-{
-	static std::map<unsigned, unsigned> lookup_table{};
-
-	const auto val = lookup_table.find(n);
-	if (val == lookup_table.end())
-	{
-		const unsigned v = flp2(n);
-		lookup_table.insert(std::make_pair(n, v));
-		return v;
-	}
-
-	return val->second;
-}
-
-__device__ float2 kernel_func_gpu(const float3 p, const float3 q)
-{
-	const float dx = p.x - q.x;
-	const float dy = p.y - q.y;
-
-	const float dist_sqr = dx * dx + dy * dy + 1e-9f;
-	const float inv_dist = rsqrtf(dist_sqr);
-	const float inv_dist3 = inv_dist * inv_dist * inv_dist;
-	const float with_mass = inv_dist3 * q.z; // z is the mass in this case
-
-	return make_float2(dx * with_mass, dy * with_mass);
-}
 
 
 float2 kernel_func_cpu(const float dx, const float dy, const float mass)
@@ -95,20 +49,33 @@ float2 kernel_func_cpu(const float dx, const float dy, const float mass)
 	const float dist_sqr = dx * dx + dy * dy + 1e-9f;
 	const float inv_dist = 1.0f / sqrtf(dist_sqr);
 	const float inv_dist3 = inv_dist * inv_dist * inv_dist;
-	const float with_mass = inv_dist3 * mass; // z is the mass in this case
-
-	return make_float2(dx * with_mass, dy * with_mass);
+	//const float with_mass = inv_dist3 * mass; // z is the mass in this case
+	return make_float2(dx * inv_dist3, dy * inv_dist3);
 }
 
 
-__global__ void force_reduction_2(const float3 source_body, const float3* bodies, float2* result, const size_t n)
+constexpr int kMaxNumPerBlock = 32;
+
+inline __device__ float2 KernelFuncGpu(const float3 p, const float3 q)
 {
-	__shared__ float2 partial_sum[max_num_bodies_per_compute];
+	const auto dx = p.x - q.x;
+	const auto dy = p.y - q.y;
+	const auto dist_sqr = dx * dx + dy * dy + 1e-9f;
+	const auto inv_dist = rsqrtf(dist_sqr);
+	const auto inv_dist3 = inv_dist * inv_dist * inv_dist;
+	//const auto with_mass = inv_dist * p.z; // z is mass
+	return make_float2(dx * inv_dist3, dy * inv_dist3);
+}
+
+__global__ void ReduceForcesGpu(const float3 source_point, const float3* data,
+                                float2* result, const size_t n)
+{
+	__shared__ float2 partial_sum[kMaxNumPerBlock];
 
 	const unsigned int tid = threadIdx.x;
 	const unsigned int i = blockIdx.x * blockDim.x + threadIdx.x;
 
-	partial_sum[tid] = i < n ? kernel_func_gpu(source_body, bodies[i]) : float2{};
+	partial_sum[tid] = i < n ? KernelFuncGpu(data[i], source_point) : float2();
 
 	__syncthreads();
 
@@ -126,22 +93,9 @@ __global__ void force_reduction_2(const float3 source_body, const float3* bodies
 
 	if (tid == 0)
 	{
-		result[blockIdx.x] = partial_sum[0];
+		result[blockIdx.x].x += partial_sum[0].x;
+		result[blockIdx.x].y += partial_sum[0].y;
 	}
-}
-
-
-float2 compute_with_cuda(const accumulator_handle* acc, const unsigned array_start, const unsigned n)
-{
-	const unsigned block_size = n;
-	constexpr unsigned grid_size = 1;
-	const auto source_body = make_float3(acc->x, acc->y, 1.0f);
-
-	force_reduction_2 << <grid_size, block_size >> >(source_body, acc->uni_bodies + array_start, acc->uni_results, n);
-
-	cudaDeviceSynchronize();
-
-	return acc->uni_results[0];
 }
 
 
@@ -152,7 +106,7 @@ accumulator_handle* get_accumulator()
 	HANDLE_ERROR(cudaSetDevice(0));
 
 	constexpr unsigned bytes_f3 = max_num_bodies_per_compute * sizeof(float3);
-	constexpr unsigned bytes_f2 = max_num_bodies_per_compute * sizeof(float3);
+	constexpr unsigned bytes_f2 = sizeof(float2);
 
 	HANDLE_ERROR(cudaMallocManaged(reinterpret_cast<void**>(&acc->uni_bodies), bytes_f3));
 	HANDLE_ERROR(cudaMallocManaged(reinterpret_cast<void**>(&acc->uni_results), bytes_f2));
@@ -168,40 +122,42 @@ int check_and_clear_current_buffer(const accumulator_handle* acc)
 	// Finished the remaining bodies in the buffer before switching context
 	if (acc->body_count != 0)
 	{
-		auto remaining_n = acc->body_count;
-
 		float2 rem_force = {};
 
-		unsigned current_index = 0;
+		const auto source_body = make_float3(acc->x, acc->y, 1.0f);
+		const auto num_to_ship = acc->body_count;
 
-		while (remaining_n >= 32)
+		const auto prev_mult_of_32 = num_to_ship / 32 * 32;
+
+		acc->uni_results[0].x = 0.0;
+		acc->uni_results[0].y = 0.0;
+
+		const size_t n_iters = prev_mult_of_32 / kMaxNumPerBlock;
+
+		for (size_t i = 0; i < n_iters; ++i)
 		{
-			const auto num_to_ship = get_previous_pow_of_2(remaining_n);
-
-			const auto result = compute_with_cuda(acc, current_index, num_to_ship);
-			rem_force.x += result.x;
-			rem_force.y += result.y;
-
-			//static int count = 0;
-			//printf("shipment %d: %d\n", count, previous_pow_of_2);
-			//++count;
-
-			remaining_n -= num_to_ship;
-
-			// drop the first 'previous_pow_of_2' particles
-			current_index += num_to_ship;
+			constexpr unsigned block_size = kMaxNumPerBlock;
+			constexpr unsigned grid_size = 1;
+			ReduceForcesGpu<<<grid_size, block_size>>>(
+				source_body, acc->uni_bodies + i * kMaxNumPerBlock, acc->uni_results,
+				kMaxNumPerBlock);
 		}
 
-		// Do the rest on CPU ( < 32)
-		for (unsigned j = current_index; j < current_index + remaining_n; ++j)
-		{
-			const auto dx = acc->x - acc->uni_bodies[j].x;
-			const auto dy = acc->y - acc->uni_bodies[j].y;
-			const auto mass = acc->uni_bodies[j].z;
+		cudaDeviceSynchronize();
 
-			const auto result = kernel_func_cpu(dx, dy, mass);
-			rem_force.x += result.x;
-			rem_force.y += result.y;
+		rem_force.x = acc->uni_results[0].x;
+		rem_force.y = acc->uni_results[0].y;
+
+		const auto rem_num = num_to_ship - prev_mult_of_32;
+		for (size_t i = 0; i < rem_num; ++i)
+		{
+			const auto dx = acc->x - acc->uni_bodies[prev_mult_of_32 + i].x;
+			const auto dy = acc->y - acc->uni_bodies[prev_mult_of_32 + i].y;
+			const auto mass = acc->uni_bodies[prev_mult_of_32 + i].z;
+
+			const auto rem_result = kernel_func_cpu(dx, dy, mass);
+			rem_force.x += rem_result.x;
+			rem_force.y += rem_result.y;
 		}
 
 		float* tmp = acc->result_addr;
@@ -251,18 +207,6 @@ int accumulator_accumulate(const float x, const float y, const float mass, accum
 	// Push this to the buffer 
 	acc->uni_bodies[acc->body_count] = make_float3(x, y, mass);
 	++acc->body_count;
-
-	if (acc->body_count >= max_num_bodies_per_compute)
-	{
-		const auto result = compute_with_cuda(acc, 0, max_num_bodies_per_compute);
-
-		// Storing the result back 
-		float* tmp = acc->result_addr;
-		tmp[0] += result.x;
-		tmp[1] += result.y;
-
-		acc->body_count = 0;
-	}
 
 	return 0;
 }

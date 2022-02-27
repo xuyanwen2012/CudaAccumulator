@@ -119,6 +119,7 @@ void quadtree::compute_center_of_mass()
 		list.push_back(cur);
 	}
 
+	auto num_leafs = 0;
 	std::for_each(list.rbegin(), list.rend(),
 	              [&](tree_node* node)
 	              {
@@ -132,6 +133,8 @@ void quadtree::compute_center_of_mass()
 				              mass_sum = node->content->mass;
 				              weighted_pos_sum = node->content->pos() * node->content->mass;
 			              }
+
+			              ++num_leafs;
 		              }
 		              else
 		              {
@@ -144,6 +147,63 @@ void quadtree::compute_center_of_mass()
 
 		              node->node_mass = mass_sum;
 		              node->weighted_pos = weighted_pos_sum;
+	              });
+
+
+	// prefetch the payloads
+	std::for_each(list.rbegin(), list.rend(),
+	              [&](tree_node* node)
+	              {
+		              if (node->is_leaf_)
+		              {
+			              return;
+		              }
+
+		              // has children.
+		              for (const tree_node* child : node->children)
+		              {
+			              if (child->is_leaf_)
+			              {
+				              if (child->content != nullptr)
+				              {
+					              // child is leaf_node
+					              node->payloads.push_back(child->content->x);
+					              node->payloads.push_back(child->content->y);
+					              node->payloads.push_back(child->content->mass);
+				              }
+			              }
+			              else
+			              {
+				              // child is tree_node
+				              /*			              const auto cm = child->center_of_mass();
+							                            node->payloads.push_back(cm.real());
+							                            node->payloads.push_back(cm.imag());
+							                            node->payloads.push_back(child->node_mass);*/
+
+				              //
+				              for (const tree_node* grand_child : child->children)
+				              {
+					              if (grand_child->is_leaf_)
+					              {
+						              if (grand_child->content != nullptr)
+						              {
+							              // grand_child is leaf_node
+							              node->payloads.push_back(grand_child->content->x);
+							              node->payloads.push_back(grand_child->content->y);
+							              node->payloads.push_back(grand_child->content->mass);
+						              }
+					              }
+					              else
+					              {
+						              // grand_child is tree_node
+						              const auto cm = grand_child->center_of_mass();
+						              node->payloads.push_back(cm.real());
+						              node->payloads.push_back(cm.imag());
+						              node->payloads.push_back(grand_child->node_mass);
+					              }
+				              }
+			              }
+		              }
 	              });
 }
 
@@ -158,24 +218,50 @@ void inner_dfs_accumulate(const tree_node* current, accumulator_handle* acc, con
 			return;
 		}
 
+		// On leaf nodes we reach the base case and we want to do the direct
+		// particle-to-particle computation.
 		accumulator_accumulate(current->content->x,
 		                       current->content->y,
 		                       current->content->mass,
 		                       acc);
 	}
-	else if (quadtree::check_theta(current, pos, theta))
-	{
-		const auto cm = current->center_of_mass();
-		accumulator_accumulate(cm.real(),
-		                       cm.imag(),
-		                       current->node_mass,
-		                       acc);
-	}
 	else
 	{
-		for (const tree_node* child : current->children)
+		const auto theta_val = quadtree::compute_theta(current, pos);
+
+		if (theta_val < theta)
 		{
-			inner_dfs_accumulate(child, acc, theta);
+			// On non-leaf nodes if the current node is under a distance
+			// threshold (theta) then we approximate this node with a
+			// particle-to-node computation.
+
+			const auto cm = current->center_of_mass();
+			accumulator_accumulate(cm.real(),
+			                       cm.imag(),
+			                       current->node_mass,
+			                       acc);
+		}
+		else if (theta_val < 1.7f * theta)
+		{
+			// Two level-over approximate
+			const auto num = current->payloads.size();
+			for (size_t i = 0; i < num; i += 3)
+			{
+				const auto x = current->payloads[i];
+				const auto y = current->payloads[i + 1];
+				const auto mass = current->payloads[i + 2];
+
+				accumulator_accumulate(x, y, mass, acc);
+			}
+		}
+		else
+		{
+			// On non-leaf nodes and if the current node's distance is greater
+			// than the threshold we want to recursively visit its children. 
+			for (const tree_node* child : current->children)
+			{
+				inner_dfs_accumulate(child, acc, theta);
+			}
 		}
 	}
 }
@@ -188,7 +274,7 @@ void quadtree::compute_force_accumulator(accumulator_handle* acc,
 	accumulator_finish(acc);
 }
 
-bool quadtree::check_theta(const tree_node* node, const vec2& pos, const float theta)
+float quadtree::compute_theta(const tree_node* node, const vec2& pos)
 {
 	const std::complex<float> com = node->center_of_mass();
 
@@ -196,7 +282,7 @@ bool quadtree::check_theta(const tree_node* node, const vec2& pos, const float t
 	const auto norm = abs(distance);
 
 	const auto geo_size = node->bounding_box.size.real();
-	return geo_size / norm < theta;
+	return geo_size / norm;
 }
 
 
