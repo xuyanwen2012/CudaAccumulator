@@ -9,9 +9,6 @@
     <ClCompile Include="bh_tree.cpp">
       <Filter>forest</Filter>
     </ClCompile>
-    <ClCompile Include="kd_tree.cpp">
-      <Filter>forest</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="accumulator.h" />
@@ -21,9 +18,6 @@
       <Filter>cxxopts</Filter>
     </ClInclude>
     <ClInclude Include="bh_tree.h">
-      <Filter>forest</Filter>
-    </ClInclude>
-    <ClInclude Include="kd_tree.h">
       <Filter>forest</Filter>
     </ClInclude>
   </ItemGroup>
