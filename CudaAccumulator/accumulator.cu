@@ -44,39 +44,6 @@ using accumulator_handle = struct accumulator_handle
 };
 
 
-/**
- * \brief find the previous power of 2 of this number
- * https://stackoverflow.com/questions/2679815/previous-power-of-2
- * \param x the number to round down
- * \return the previous power of 2
- */
-uint32_t flp2(uint32_t x)
-{
-	x = x | x >> 1;
-	x = x | x >> 2;
-	x = x | x >> 4;
-	x = x | x >> 8;
-	x = x | x >> 16;
-	return x - (x >> 1);
-}
-
-
-int get_previous_pow_of_2(unsigned n)
-{
-	static std::map<unsigned, unsigned> lookup_table{};
-
-	const auto val = lookup_table.find(n);
-	if (val == lookup_table.end())
-	{
-		const int v = flp2(n);
-		lookup_table.insert(std::make_pair(n, v));
-		return v;
-	}
-
-	return val->second;
-}
-
-
 float2 kernel_func_cpu(const float dx, const float dy, const float mass)
 {
 	const float dist_sqr = dx * dx + dy * dy + 1e-9f;
