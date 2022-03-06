@@ -8,7 +8,7 @@
 
 #include "device_launch_parameters.h"
 
-constexpr unsigned max_num_bodies_per_compute = 1024;
+constexpr unsigned kMaxNumBodiesPerCompute = 1024;
 
 int running_count;
 long long avg_reduction_size;
@@ -41,6 +41,7 @@ using accumulator_handle = struct accumulator_handle
 	unsigned int body_count;
 	float3* uni_bodies;
 	float2* uni_results; // only one of this
+	int* uni_sizes; 
 };
 
 
@@ -105,7 +106,7 @@ accumulator_handle* get_accumulator()
 
 	HANDLE_ERROR(cudaSetDevice(0));
 
-	constexpr unsigned bytes_f3 = max_num_bodies_per_compute * sizeof(float3);
+	constexpr unsigned bytes_f3 = kMaxNumBodiesPerCompute * sizeof(float3);
 	constexpr unsigned bytes_f2 = sizeof(float2);
 
 	HANDLE_ERROR(cudaMallocManaged(reinterpret_cast<void**>(&acc->uni_bodies), bytes_f3));
